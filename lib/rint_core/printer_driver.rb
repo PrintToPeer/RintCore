@@ -45,7 +45,6 @@ module RintCore
       @resend_from = -1
       @paused = false
       @sent_lines = []
-      @sent = []
       @loud = false # emit sent and received lines to terminal
       @greetings = ['start','Grbl ']
       @wait = 0 # default wait period for send(), send_now()
@@ -222,7 +221,6 @@ private
         _send_next
       end
       @sent_lines = []
-      @sent = []
       @print_thread.join
       @print_thread = nil
       end_callback.call if end_callback.respond_to?(:call)
@@ -276,7 +274,6 @@ private
         @sent_lines[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
       end
       if @printer
-        @sent.push(command)
         send_callback.call(command) if send_callback.respond_to?(:call)
         command = (command + "\n").encode(@encoding)
         @printer.write(command)
