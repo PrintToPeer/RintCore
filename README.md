@@ -1,5 +1,7 @@
 # RintCore
 
+[![Code Climate](https://codeclimate.com/github/KazW/RintCore.png)](https://codeclimate.com/github/KazW/RintCore)
+
 A RepRap/GCode parsing and sending utility written in Ruby.
 
 ### TODO

@@ -31,9 +31,9 @@ module RintCore
       control_ttyhup(port, false)
     end
 
-    def initialize(port = nil, baud = nil)
-      @baud = nil
-      @port = nil
+    def initialize
+      @baud = baud.present? ? baud : nil
+      @port = port.present? ? port : nil
       @printer = nil # Serial instance connected to the printer, nil when disconnected
       @clear = 0 # clear to send, enabled after responses
       @online = false # The printer has responded to the initial command and is active
@@ -57,13 +57,13 @@ module RintCore
       @resend_response = ['rs','resend']
       @sleep_time = 0.001
       @encoding = 'us-ascii'
+
       OnlinePrintingCheck = Proc.new { @printing && @printer && @online }
       ClearPrintingCheck = Proc.new { @printer && @printing && !@clear }
       WaitCheck = Proc.new { |wait| wait > 0 && ClearPrintingCheck }
-      connect(port, baud) if port.present? && baud.present?
     end
 
-    def disconnect
+    def disconnect!
       if @printer 
         if @read_thread
           @stop_read_thread = true
@@ -77,34 +77,95 @@ module RintCore
       @printing = false
     end
 
-    def connect(port = nil, baud = nil)
+    def connect!
       disconnect if @printer
-      @port = port if port.present?
-      @baud = baud if baud.present?
-      @port = self.port if self.port.present?
-      @baud = self.baud if self.baud.present?
       if @port.present? && @baud.present?
         disable_hup(@port)
         @printer = SerialPort.new(@port, @baud)
         @printer.read_timeout = 0
         @stop_read_thread = false
         @read_thread = Thread.new(_listen)
-        connect_callback.call if connect_callback.present? && connect_callback.respond_to?(:call)
+        connect_callback.call if connect_callback.respond_to?(:call)
       end
     end
 
-    def reset
+    def reset!
       @printer.dtr = 0
       sleep 0.2
       @printer.dtr = 1
     end
+
+    def pause!
+      return false unless @printing
+      @paused = true
+      @printing = false
+      @print_thread.join
+      @print_thread = nil
+    end
+
+    def resume!
+      return false unless @paused
+      @paused = false
+      @printing = true
+      @print_thread = Thread.new(_print)
+    end
+
+    def send(command, wait = 0, send_now = false)
+      if @online
+        if @printing
+          send_now ? @priority_queue.push(command) : @main_queue.push(command)
+        else
+          while ClearPrintingCheck.call do
+            sleep(@sleep_time)
+          end
+          wait = @wait if wait == 0 && @wait > 0
+          @clear = false if wait > 0
+          _send(command, @line_number, true)
+          @line_number += 1
+          while WaitCheck.call(wait) do
+            sleep @sleep_time
+            wait -= 1
+          end
+        end
+      else
+        # TODO: log something about not being connected to printer
+      end
+    end
+
+    def send_now(command, wait = 0)
+      send(command, wait, true)
+    end
+
+    def start_print(data, start_index = 0)
+      return false if @printing || !@online || !@printer
+      @printing = true
+      @main_queue = [] + data
+      @line_number = 0
+      @queue_index = start_index
+      @resend_from = -1
+      _send(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+      return true if data.blank?
+      @clear = false
+      @print_thread = Thread.new(_print)
+      return true
+    end
+
+    def online?
+      @online
+    end
+
+    def printing?
+      @printing
+    end
+
+private
 
     def _readline
       begin
         line = @printer.readline
         if line.length > 1
           @log.push line
-          receive_callback.call(line) if receive_callback.present? && receive_callback.respond_to?(:call)
+          receive_callback.call(line) if receive_callback.respond_to?(:call)
         end
         line # return the line
       rescue EOFError, Errno::ENODEV => e
@@ -127,7 +188,7 @@ module RintCore
             line.blank? ? empty_lines += 1 : empty_lines = 0
             throw 'BreakOut' if empty_lines == 5
             if line.start_with?(*@greetings, @good_response)
-              online_callback.call if online_callback.present? && online_callback.respond_to?(:call)
+              online_callback.call if online_callback.respond_to?(:call)
               @online = true
               return true
             end
@@ -143,10 +204,10 @@ module RintCore
       while _listen_can_continue? do
         line = _readline
         break if line.nil?
-        debug_callback.call(line) if line.start_with?('DEBUG_') && debug_callback.present? && debug_callback.respond_to?(:call)
+        debug_callback.call(line) if line.start_with?('DEBUG_') && debug_callback.respond_to?(:call)
         @clear = true if line.start_with?(*@greetings, @good_response)
-        temperature_callback.call(line) if line.start_with?(@good_response) && line.include?('T:') && temperature_callback.present? && temperature_callback.respond_to?(:call)
-        error_callback.call(line) if line.start_with?('Error') && error_callback.present? && error_callback.respond_to?(:call)
+        temperature_callback.call(line) if line.start_with?(@good_response) && line.include?('T:') && temperature_callback.respond_to?(:call)
+        error_callback.call(line) if line.start_with?('Error') && error_callback.respond_to?(:call)
         if line.downcase.start_with?(*@resend_response)
           line = line.sub('N:', ' ').sub('N', ' ').sub(':', ' ')
           linewords = line.split
@@ -161,80 +222,8 @@ module RintCore
       command.bytes.inject{|a,b| a^b}.to_s
     end
 
-    def start_print(data, start_index = 0)
-      return false if @printing || !@online || !@printer
-      @printing = true
-      @main_queue = [] + data
-      @line_number = 0
-      @queue_index = start_index
-      @resend_from = -1
-      _send(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
-      return true if data.blank?
-      @clear = false
-      @print_thread = Thread.new(_print)
-      return true
-    end
-
-    def pause
-      return false unless @printing
-      @paused = true
-      @printing = false
-      @print_thread.join
-      @print_thread = nil
-    end
-
-    def resume
-      return false unless @paused
-      @paused = false
-      @printing = true
-      @print_thread = Thread.new(_print)
-    end
-
-    def send(command, wait = 0)
-      if @online
-        if @printing
-          @main_queue.push(command)
-        else
-          while ClearPrintingCheck.call do
-            sleep(@sleep_time)
-          end
-          wait = @wait if wait == 0 && @wait > 0
-          @clear = false if wait > 0
-          _send(command, @line_number, true)
-          @line_number += 1
-          while WaitCheck.call(wait) do
-            sleep @sleep_time
-            wait -= 1
-          end
-        end
-      else
-        # TODO: log something about not being connected to printer
-      end
-    end
-
-    def send_now(command, wait = 0)
-      if @online
-        if @printing
-          @priority_queue.append(command)
-        else
-          while ClearPrintingCheck.call do
-            sleep(@sleep_time)
-          end
-          wait = @wait if wait == 0 && @wait > 0
-          @clear = false if wait > 0
-          _send(command)
-          while WaitCheck.call(wait) do
-            sleep @sleep_time
-            wait -= 1
-          end
-        end
-      else
-        # TODO: log something about not being connected to printer
-      end
-    end
-
     def _print
-      start_callback.call if start_callback.present? && start_callback.respond_to?(:call)
+      start_callback.call if start_callback.respond_to?(:call)
       while OnlinePrintingCheck.call do
         _send_next
       end
@@ -243,7 +232,7 @@ module RintCore
       @sent = []
       @print_thread.join
       @print_thread = nil
-      end_callback.call if end_callback.present? && end_callback.respond_to?(:call)
+      end_callback.call if end_callback.respond_to?(:call)
       return true
     end
 
@@ -296,19 +285,11 @@ module RintCore
       end
       if @printer
         @sent.push(command)
-        send_callback.call(command) if send_callback.present? && send_callback.respond_to?(:call)
+        send_callback.call(command) if send_callback.respond_to?(:call)
         command = command+"\n"
         command = command.encode(@encoding)
         @printer.write(command)
       end
-    end
-
-    def online?
-      @online
-    end
-
-    def printing?
-      @printing
     end
 
   end
