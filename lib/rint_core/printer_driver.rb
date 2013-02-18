@@ -110,10 +110,10 @@ module RintCore
       @print_thread = Thread.new(print!)
     end
 
-    def send(command, wait = 0, send_now = false)
+    def send(command, wait = 0, priority = false)
       if @online
         if @printing
-          send_now ? @priority_queue.push(command) : @main_queue.push(command)
+          priority ? @priority_queue.push(command) : @main_queue.push(command)
         else
           while ClearPrintingCheck.call do
             sleep(@sleep_time)
