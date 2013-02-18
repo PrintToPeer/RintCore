@@ -1,4 +1,4 @@
-require 'rint_core/g_code/codes'
+require 'rint_core/g_code'
 require 'serialport'
 require 'active_support/core_ext/object/blank'
 require 'active_support/configurable'
@@ -218,10 +218,6 @@ private
       @clear = true
     end
 
-    def line_checksum(command)
-      command.bytes.inject{|a,b| a^b}.to_s
-    end
-
     def print!
       start_callback.call if start_callback.respond_to?(:call)
       while OnlinePrintingCheck.call do
@@ -277,14 +273,9 @@ private
       end
     end
 
-    def prefix_command(command, line_number)
-      prefix = 'N' + line_number.to_s + ' ' + command
-      command = prefix + '*' + line_checksum(prefix)
-    end
-
     def send!(command, line_number = 0, calc_checksum = false)
       if calc_checksum
-        command = prefix_command(command, line_number)
+        command = RintCore::GCode.prefix_command(command, line_number)
         @sent_lines[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
       end
       if @printer
