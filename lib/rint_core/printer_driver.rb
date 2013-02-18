@@ -86,7 +86,7 @@ module RintCore
         @printer.read_timeout = 0
         @stop_read_thread = false
         @read_thread = Thread.new(_listen)
-        eval(connect_callback) if connect_callback.present?
+        connect_callback.call if connect_callback.present? && connect_callback.respond_to?(:call)
       end
     end
 
@@ -101,7 +101,7 @@ module RintCore
         line = @printer.readline
         if line.length > 1
           @log.push line
-          eval(receive_callback+'(line)') if receive_callback.present?
+          receive_callback.call(line) if receive_callback.present? && receive_callback.respond_to?(:call)
         end
         line # return the line
       rescue EOFError, Errno::ENODEV => e
@@ -124,7 +124,7 @@ module RintCore
             line.blank? ? empty_lines += 1 : empty_lines = 0
             throw 'BreakOut' if empty_lines == 5
             if line.start_with?(*@greetings, @good_response)
-              eval(online_callback) if online_callback.present?
+              online_callback.call if online_callback.present? && online_callback.respond_to?(:call)
               @online = true
               return true
             end
@@ -140,10 +140,10 @@ module RintCore
       while _listen_can_continue? do
         line = _readline
         break if line.nil?
-        eval(debug_callback+'(line)') if line.start_with?('DEBUG_') && debug_callback.present?
+        debug_callback.call(line) if line.start_with?('DEBUG_') && debug_callback.present? && debug_callback.respond_to?(:call)
         @clear = true if line.start_with?(*@greetings, @good_response)
-        eval(temperature_callback+'(line)') if line.start_with?(@good_response) && line.include?('T:') && temperature_callback.present?
-        eval(error_callback+'(line)') if line.start_with?('Error') && error_callback.present?
+        temperature_callback.call(line) if line.start_with?(@good_response) && line.include?('T:') && temperature_callback.present? && temperature_callback.respond_to?(:call)
+        error_callback.call(line) if line.start_with?('Error') && error_callback.present? && error_callback.respond_to?(:call)
         if line.downcase.start_with?(*@resend_response)
           line = line.sub('N:', ' ').sub('N', ' ').sub(':', ' ')
           linewords = line.split
@@ -231,7 +231,7 @@ module RintCore
     end
 
     def _print
-      eval(start_callback) if start_callback.present?
+      start_callback.call if start_callback.present? && start_callback.respond_to?(:call)
       while @printing && @printer && @online do
         _send_next
       end
@@ -240,7 +240,7 @@ module RintCore
       @sent = []
       @print_thread.join
       @print_thread = nil
-      eval(end_callback) if end_callback.present?
+      end_callback.call if end_callback.present? && end_callback.respond_to?(:call)
       return true
     end
 
@@ -293,7 +293,7 @@ module RintCore
       end
       if @printer
         @sent.push(command)
-        eval(send_callback+'(command)') if send_callback.present?
+        send_callback.call(command) if send_callback.present? && send_callback.respond_to?(:call)
         command = command+"\n"
         command = command.encode(@encoding)
         @printer.write(command)
