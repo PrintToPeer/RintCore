@@ -4,7 +4,7 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/configurable'
 
 module RintCore
-  class PrinterDriver
+  class Driver
     include ActiveSupport::Configurable
 
     # Callbacks are typically given a string argument, usually the current line
