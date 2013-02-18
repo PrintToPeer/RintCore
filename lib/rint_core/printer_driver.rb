@@ -160,7 +160,7 @@ module RintCore
 
 private
 
-    def _readline
+    def readline!
       begin
         line = @printer.readline
         if line.length > 1
@@ -183,7 +183,7 @@ private
           send!(RintCore::GCode::Codes::GET_EXT_TEMP)
           empty_lines = 0
           while _listen_can_continue? do
-            line = _readline
+            line = readline!
             throw 'BreakOut' if line.nil?
             line.blank? ? empty_lines += 1 : empty_lines = 0
             throw 'BreakOut' if empty_lines == 5
@@ -202,7 +202,7 @@ private
       @clear = true
       _listen_until_online unless @printing
       while _listen_can_continue? do
-        line = _readline
+        line = readline!
         break if line.nil?
         debug_callback.call(line) if line.start_with?('DEBUG_') && debug_callback.respond_to?(:call)
         @clear = true if line.start_with?(*@greetings, @good_response)
