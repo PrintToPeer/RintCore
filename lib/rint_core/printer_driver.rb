@@ -237,7 +237,7 @@ private
         @clear = true
         return true
       end
-      if @resendfrom < @lineno && @resendfrom > -1
+      if @resend_from < @line_number && @resend_from > -1
         send!(@sent_lines[@resend_from], @resend_from, false)
         @resend_from += 1
         return true
