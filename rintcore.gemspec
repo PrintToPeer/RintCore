@@ -8,8 +8,8 @@ Gem::Specification.new do |gem|
   gem.version                    = RintCore::VERSION
   gem.authors                    = ["Kaz Walker","Rob Gilson"]
   gem.email                      = ["kaz.walker@doopli.co"]
-  gem.description                = %q{A RepRap/GCode parsing and sending utility written in Ruby.}
-  gem.summary                    = %q{TODO: Write a gem summary}
+  gem.description                = %q{RepRap/GCode utilities written in Ruby.}
+  gem.summary                    = %q{A Ruby implementation of PrintCore.}
   gem.homepage                   = "https://github.com/KazW/RintCore"
 
   gem.files                      = `git ls-files`.split($/)
