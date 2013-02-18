@@ -45,7 +45,6 @@ module RintCore
       @resend_from = -1
       @paused = false
       @sent_lines = []
-      @log = []
       @sent = []
       @loud = false # emit sent and received lines to terminal
       @greetings = ['start','Grbl ']
@@ -164,7 +163,6 @@ private
       begin
         line = @printer.readline
         if line.length > 1
-          @log.push line
           receive_callback.call(line) if receive_callback.respond_to?(:call)
         end
         line # return the line
@@ -224,7 +222,6 @@ private
         _send_next
       end
       @sent_lines = []
-      @log = []
       @sent = []
       @print_thread.join
       @print_thread = nil
