@@ -16,14 +16,15 @@ you can share.
 
 If you'd like to submit a pull request please adhere to the following:
 
-1. Your code *must* be tested. Please TDD your code!
-2. No single-character variables
-3. Two-spaces instead of tabs
-4. Single-quotes instead of double-quotes unless you are using string
+1. Your code *must* be tested. Please TDD your code! (where ever possible)
+2. do modifications on an appropriately named branch.
+3. No single-character variables
+4. Two-spaces instead of tabs
+5. Single-quotes instead of double-quotes unless you are using string
    interpolation or escapes.
-5. General Rails/Ruby naming conventions for files and classes
-6. Have your commit message prefixed with the class it impacts Eg.: [PrinterDriver] Made it more awesome.
-7. A single commit can only impact one class. If your changes impact multiple classes, then
+6. General Rails/Ruby naming conventions for files and classes
+7. Have your commit message prefixed with the class it impacts Eg.: [PrinterDriver] Made it more awesome.
+8. A single commit can only impact one class. If your changes impact multiple classes, then
    your pull request must have multiple commits.
 
 Plase note that you must adhere to each of the above mentioned rules.
