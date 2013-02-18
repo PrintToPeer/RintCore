@@ -120,7 +120,7 @@ module RintCore
           end
           wait = @wait if wait == 0 && @wait > 0
           @clear = false if wait > 0
-          _send(command, @line_number, true)
+          send!(command, @line_number, true)
           @line_number += 1
           while WaitCheck.call(wait) do
             sleep @sleep_time
@@ -143,7 +143,7 @@ module RintCore
       @line_number = 0
       @queue_index = start_index
       @resend_from = -1
-      _send(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+      send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
       return true if data.blank?
       @clear = false
       @print_thread = Thread.new(_print)
@@ -180,7 +180,7 @@ private
     def _listen_until_online
       catch 'BreakOut' do
         while !@online && _listen_can_continue? do
-          _send(RintCore::GCode::Codes::GET_EXT_TEMP)
+          send!(RintCore::GCode::Codes::GET_EXT_TEMP)
           empty_lines = 0
           while _listen_can_continue? do
             line = _readline
@@ -225,7 +225,7 @@ private
     def _print
       start_callback.call if start_callback.respond_to?(:call)
       while OnlinePrintingCheck.call do
-        _send_next
+        send!_next
       end
       @sent_lines = []
       @log = []
@@ -236,7 +236,7 @@ private
       return true
     end
 
-    def _send_next
+    def send!_next
       return false unless @printer
       while ClearPrintingCheck.call do
         sleep(@sleep_time)
@@ -247,20 +247,20 @@ private
         return true
       end
       if @resendfrom < @lineno && @resendfrom > -1
-        _send(@sent_lines[@resend_from], @resend_from, false)
+        send!(@sent_lines[@resend_from], @resend_from, false)
         @resend_from += 1
         return true
       end
       @resend_from = -1
       unless @priority_queue.blank?
-        _send(@priority_queue.pop(0))
+        send!(@priority_queue.pop(0))
         return true
       end
       if @printing && @queue_index < @main_queue.length
         current_line = @main_queue[@queue_index]
         current_line = current_line.split(RintCore::GCode::Codes::COMMENT_SYMBOL)[0]
         unless current_line.blank?
-          _send(current_line, @line_number, true)
+          send!(current_line, @line_number, true)
           @line_number += 1
         else
           @clear = true
@@ -272,12 +272,12 @@ private
         unless @paused
           @queue_index = 0
           @line_number = 0
-          _send(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+          send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
         end
       end
     end
 
-    def _send(command, line_number = 0, calc_checksum = false)
+    def send!(command, line_number = 0, calc_checksum = false)
       if calc_checksum
         prefix = 'N' + line_number.to_s + ' ' + command
         command = prefix + '*' + _checksum(prefix)
