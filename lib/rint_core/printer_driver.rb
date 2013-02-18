@@ -173,16 +173,16 @@ private
       end
     end
 
-    def _listen_can_continue?
+    def listen_can_continue?
       !@stop_read_thread && @printer
     end
 
     def _listen_until_online
       catch 'BreakOut' do
-        while !@online && _listen_can_continue? do
+        while !@online && listen_can_continue? do
           send!(RintCore::GCode::Codes::GET_EXT_TEMP)
           empty_lines = 0
-          while _listen_can_continue? do
+          while listen_can_continue? do
             line = readline!
             throw 'BreakOut' if line.nil?
             line.blank? ? empty_lines += 1 : empty_lines = 0
@@ -201,7 +201,7 @@ private
     def _listen
       @clear = true
       _listen_until_online unless @printing
-      while _listen_can_continue? do
+      while listen_can_continue? do
         line = readline!
         break if line.nil?
         debug_callback.call(line) if line.start_with?('DEBUG_') && debug_callback.respond_to?(:call)
