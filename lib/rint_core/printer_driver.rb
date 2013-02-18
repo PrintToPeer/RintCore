@@ -107,7 +107,7 @@ module RintCore
       return false unless @paused
       @paused = false
       @printing = true
-      @print_thread = Thread.new(_print)
+      @print_thread = Thread.new(print!)
     end
 
     def send(command, wait = 0, send_now = false)
@@ -146,7 +146,7 @@ module RintCore
       send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
       return true if data.blank?
       @clear = false
-      @print_thread = Thread.new(_print)
+      @print_thread = Thread.new(print!)
       return true
     end
 
@@ -222,7 +222,7 @@ private
       command.bytes.inject{|a,b| a^b}.to_s
     end
 
-    def _print
+    def print!
       start_callback.call if start_callback.respond_to?(:call)
       while OnlinePrintingCheck.call do
         _send_next
