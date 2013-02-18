@@ -277,17 +277,20 @@ private
       end
     end
 
+    def prefix_command(command, line_number)
+      prefix = 'N' + line_number.to_s + ' ' + command
+      command = prefix + '*' + line_checksum(prefix)
+    end
+
     def send!(command, line_number = 0, calc_checksum = false)
       if calc_checksum
-        prefix = 'N' + line_number.to_s + ' ' + command
-        command = prefix + '*' + line_checksum(prefix)
+        command = prefix_command(command, line_number)
         @sent_lines[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
       end
       if @printer
         @sent.push(command)
         send_callback.call(command) if send_callback.respond_to?(:call)
-        command = command+"\n"
-        command = command.encode(@encoding)
+        command = (command + "\n").encode(@encoding)
         @printer.write(command)
       end
     end
