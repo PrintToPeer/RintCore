@@ -57,6 +57,9 @@ module RintCore
       @resend_response = ['rs','resend']
       @sleep_time = 0.001
       @encoding = 'us-ascii'
+      OnlinePrintingCheck = Proc.new { @printing && @printer && @online }
+      ClearPrintingCheck = Proc.new { @printer && @printing && !@clear }
+      WaitCheck = Proc.new { |wait| wait > 0 && ClearPrintingCheck }
       connect(port, baud) if port.present? && baud.present?
     end
 
@@ -192,14 +195,14 @@ module RintCore
         if @printing
           @main_queue.push(command)
         else
-          while @printer && @printing && !@clear do
+          while ClearPrintingCheck.call do
             sleep(@sleep_time)
           end
           wait = @wait if wait == 0 && @wait > 0
           @clear = false if wait > 0
           _send(command, @line_number, true)
           @line_number += 1
-          while wait > 0 && @printer && @printing && !@clear do
+          while WaitCheck.call(wait) do
             sleep @sleep_time
             wait -= 1
           end
@@ -214,13 +217,13 @@ module RintCore
         if @printing
           @priority_queue.append(command)
         else
-          while @printer && @printing && !@clear do
+          while ClearPrintingCheck.call do
             sleep(@sleep_time)
           end
           wait = @wait if wait == 0 && @wait > 0
           @clear = false if wait > 0
           _send(command)
-          while wait > 0 && @printer && @printing && !@clear do
+          while WaitCheck.call(wait) do
             sleep @sleep_time
             wait -= 1
           end
@@ -232,7 +235,7 @@ module RintCore
 
     def _print
       start_callback.call if start_callback.present? && start_callback.respond_to?(:call)
-      while @printing && @printer && @online do
+      while OnlinePrintingCheck.call do
         _send_next
       end
       @sent_lines = []
@@ -246,11 +249,11 @@ module RintCore
 
     def _send_next
       return false unless @printer
-      while @printer && @printing && !@clear do
+      while ClearPrintingCheck.call do
         sleep(@sleep_time)
       end
       @clear = false
-      unless @printing && @printer && @online
+      unless OnlinePrintingCheck.call
         @clear = true
         return true
       end
