@@ -1,4 +1,4 @@
-# Hornet
+# RintCore
 
 A RepRap/GCode parsing and sending utility written in Ruby.
 
