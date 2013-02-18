@@ -218,7 +218,7 @@ private
       @clear = true
     end
 
-    def _checksum(command)
+    def line_checksum(command)
       command.bytes.inject{|a,b| a^b}.to_s
     end
 
@@ -280,7 +280,7 @@ private
     def send!(command, line_number = 0, calc_checksum = false)
       if calc_checksum
         prefix = 'N' + line_number.to_s + ' ' + command
-        command = prefix + '*' + _checksum(prefix)
+        command = prefix + '*' + line_checksum(prefix)
         @sent_lines[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
       end
       if @printer
