@@ -225,7 +225,7 @@ private
     def _print
       start_callback.call if start_callback.respond_to?(:call)
       while OnlinePrintingCheck.call do
-        send!_next
+        _send_next
       end
       @sent_lines = []
       @log = []
@@ -236,7 +236,7 @@ private
       return true
     end
 
-    def send!_next
+    def _send_next
       return false unless @printer
       while ClearPrintingCheck.call do
         sleep(@sleep_time)
