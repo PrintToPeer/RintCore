@@ -4,7 +4,7 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/configurable'
 
 module RintCore
-  class Driver
+  class Printer
     include ActiveSupport::Configurable
 
     # Callbacks are typically given a string argument, usually the current line
@@ -158,6 +158,15 @@ module RintCore
 
 private
 
+    def prefix_command(command, line_number)
+      prefix = 'N' + line_number.to_s + ' ' + command
+      command = prefix + '*' + line_checksum(prefix)
+    end
+
+    def line_checksum(command)
+        command.bytes.inject{|a,b| a^b}.to_s
+    end
+
     def readline!
       begin
         line = @printer.readline
@@ -270,7 +279,7 @@ private
 
     def send!(command, line_number = 0, calc_checksum = false)
       if calc_checksum
-        command = RintCore::GCode.prefix_command(command, line_number)
+        command = prefix_command(command, line_number)
         @sent_lines[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
       end
       if @printer

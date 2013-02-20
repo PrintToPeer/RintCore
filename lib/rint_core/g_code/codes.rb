@@ -1,6 +1,6 @@
 module RintCore
   module GCode
-    class Codes
+    module Codes
       RAPID_MOVE      = 'G0'
       CONTROLLED_MOVE = 'G1'
       DWELL           = 'G4'
