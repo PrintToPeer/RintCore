@@ -1,6 +1,11 @@
+require 'active_support/core_ext/object/blank'
+
 module RintCore
   module Driver
     module Queueing
+
+private
+
       def initialize_queueing
         @main_queue = []
         @priority_queue = []
@@ -39,7 +44,6 @@ module RintCore
         elsif @resend_from < @line_number && @resend_from > -1
           send!(@sent_lines[@resend_from], @resend_from, false)
           @resend_from += 1
-          clear_to_send!
           return true
         end
       end
@@ -47,7 +51,6 @@ module RintCore
       def run_priority_queue
         unless @priority_queue.blank?
           send!(@priority_queue.pop(0))
-          clear_to_send!
           return true
         end
       end
@@ -60,7 +63,6 @@ module RintCore
             @line_number += 1
           end
           @queue_index += 1
-          clear_to_send!
           return true
         end
       end

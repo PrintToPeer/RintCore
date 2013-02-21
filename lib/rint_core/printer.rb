@@ -35,10 +35,6 @@ module RintCore
       @baud = baud.present? ? baud : nil
       @port = port.present? ? port : nil
       @printer = nil # Serial instance connected to the printer, nil when disconnected
-      @clear = 0 # clear to send, enabled after responses
-      @online = false # The printer has responded to the initial command and is active
-      @printing = false # is a print currently running, true if printing, false if paused
-      @paused = false
       @loud = false # emit sent and received lines to terminal
       @greetings = ['start','Grbl ']
       @wait = 0 # default wait period for send(), send_now()
@@ -53,53 +49,6 @@ module RintCore
       OnlinePrintingCheck = Proc.new { @printing && @printer && @online }
       ClearPrintingCheck = Proc.new { @printer && @printing && !@clear }
       WaitCheck = Proc.new { |wait| wait > 0 && ClearPrintingCheck }
-    end
-
-    def disconnect!
-      if @printer 
-        if @read_thread
-          @stop_read_thread = true
-          @read_thread.join
-          @read_thread = nil
-        end
-        @printer.close
-      end
-      @printer = nil
-      @online = false
-      @printing = false
-    end
-
-    def connect!
-      disconnect if @printer
-      if @port.present? && @baud.present?
-        disable_hup(@port)
-        @printer = SerialPort.new(@port, @baud)
-        @printer.read_timeout = 0
-        @stop_read_thread = false
-        @read_thread = Thread.new(_listen)
-        connect_callback.call if connect_callback.respond_to?(:call)
-      end
-    end
-
-    def reset!
-      @printer.dtr = 0
-      sleep 0.2
-      @printer.dtr = 1
-    end
-
-    def pause!
-      return false unless @printing
-      @paused = true
-      @printing = false
-      @print_thread.join
-      @print_thread = nil
-    end
-
-    def resume!
-      return false unless @paused
-      @paused = false
-      @printing = true
-      @print_thread = Thread.new(print!)
     end
 
     def send(command, wait = 0, priority = false)
@@ -140,14 +89,6 @@ module RintCore
       @clear = false
       @print_thread = Thread.new(print!)
       return true
-    end
-
-    def online?
-      @online
-    end
-
-    def printing?
-      @printing
     end
 
 private
