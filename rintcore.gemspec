@@ -6,7 +6,7 @@ require 'rint_core/version'
 Gem::Specification.new do |gem|
   gem.name                       = "rintcore"
   gem.version                    = RintCore::VERSION
-  gem.authors                    = ["Kaz Walker","Rob Gilson"]
+  gem.authors                    = ["Kaz Walker"]
   gem.email                      = ["kaz.walker@doopli.co"]
   gem.description                = %q{RepRap/GCode utilities written in Ruby.}
   gem.summary                    = %q{A Ruby implementation of PrintCore.}
@@ -19,4 +19,5 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency     'serialport', '1.1.0'
   gem.add_runtime_dependency     'activesupport'
   gem.add_development_dependency 'rake'
+  gem.add_development_dependency 'rspec'
 end
