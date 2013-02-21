@@ -38,13 +38,7 @@ module RintCore
       @clear = 0 # clear to send, enabled after responses
       @online = false # The printer has responded to the initial command and is active
       @printing = false # is a print currently running, true if printing, false if paused
-      @main_queue = []
-      @priority_queue = []
-      @queue_index = 0
-      @line_number = 0
-      @resend_from = -1
       @paused = false
-      @sent_lines = []
       @loud = false # emit sent and received lines to terminal
       @greetings = ['start','Grbl ']
       @wait = 0 # default wait period for send(), send_now()
@@ -227,54 +221,13 @@ private
     def print!
       start_callback.call if start_callback.respond_to?(:call)
       while OnlinePrintingCheck.call do
-        _send_next
+        advance_queue
       end
       @sent_lines = []
       @print_thread.join
       @print_thread = nil
       end_callback.call if end_callback.respond_to?(:call)
       return true
-    end
-
-    def _send_next
-      return false unless @printer
-      while ClearPrintingCheck.call do
-        sleep(@sleep_time)
-      end
-      @clear = false
-      unless OnlinePrintingCheck.call
-        @clear = true
-        return true
-      end
-      if @resend_from < @line_number && @resend_from > -1
-        send!(@sent_lines[@resend_from], @resend_from, false)
-        @resend_from += 1
-        return true
-      end
-      @resend_from = -1
-      unless @priority_queue.blank?
-        send!(@priority_queue.pop(0))
-        return true
-      end
-      if @printing && @queue_index < @main_queue.length
-        current_line = @main_queue[@queue_index]
-        current_line = current_line.split(RintCore::GCode::Codes::COMMENT_SYMBOL)[0]
-        unless current_line.blank?
-          send!(current_line, @line_number, true)
-          @line_number += 1
-        else
-          @clear = true
-        end
-        @queue_index += 1
-      else
-        @printing = false
-        @clear = true
-        unless @paused
-          @queue_index = 0
-          @line_number = 0
-          send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
-        end
-      end
     end
 
     def send!(command, line_number = 0, calc_checksum = false)
