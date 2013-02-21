@@ -12,7 +12,7 @@ module RintCore
           @connection.read_timeout = config.read_timeout
           @stop_read_thread = false
           @read_thread = Thread.new(listen)
-          config.callbacks[:connect].call if callbacks[:connect].present?
+          config.callbacks[:connect].call if config.callbacks[:connect].present?
         end
       end
 

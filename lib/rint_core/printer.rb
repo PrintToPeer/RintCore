@@ -13,24 +13,6 @@ module RintCore
                     :end_callback, :online_callback, :debug_callback,
                     :connect_callback
 
-    def control_ttyhup(port, disable_hup)
-      if /linux/ =~ RUBY_PLATFORM
-        if disable_hup
-          `stty -F #{port} -hup`
-        else
-          `stty -F #{port} hup`
-        end
-      end
-    end
-
-    def enable_hup(port)
-      control_ttyhup(port, true)
-    end
-
-    def disable_hup(port)
-      control_ttyhup(port, false)
-    end
-
     def initialize
       @baud = baud.present? ? baud : nil
       @port = port.present? ? port : nil
