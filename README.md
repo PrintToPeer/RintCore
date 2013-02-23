@@ -31,7 +31,7 @@ See CONTRIBUTING.md
 
 Copyright (C) 2013  Kaz Walker
 
-The PrinterDriver class is based on printcore.py by Kliment Yanev and various contributors.
+The Diver modules are based on printcore.py by Kliment Yanev and various contributors.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as
