@@ -4,6 +4,20 @@
 
 A RepRap/GCode parsing and sending utility written in Ruby.
 
+### Usage
+
+Clone the repo and cd into it.
+```
+bundle exec irb
+```
+```ruby
+require 'rint_core/printer'
+printer = RintCore::Printer.new
+printer.callbacks[:temperature] = Proc.new { |line| puts(line) }
+printer.connect!
+printer.send 'M105'
+```
+
 ### TODO
 
 Update this list and everything else in general.
