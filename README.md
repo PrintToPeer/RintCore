@@ -13,6 +13,8 @@ bundle exec irb
 ```ruby
 require 'rint_core/printer'
 printer = RintCore::Printer.new
+printer.port = '/dev/ttyUSB0' # Set to /dev/ttyACM0 by default
+printer.baud = 250000 # Set to 115200 by default
 printer.callbacks[:temperature] = Proc.new { |line| puts(line) }
 printer.connect!
 printer.send 'M105'
