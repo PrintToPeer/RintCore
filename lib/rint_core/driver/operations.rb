@@ -1,14 +1,18 @@
+require 'serialport'
+require 'active_support/core_ext/object/blank'
+
 module RintCore
   module Driver
     module Operations
 
       def connect!
-        if config.port.present? && config.baud.present? && !connected?
+        return false if connected?
+        if config.port.present? && config.baud.present?
           disable_hup(config.port)
           @connection = SerialPort.new(config.port, config.baud)
           @connection.read_timeout = config.read_timeout
           @stop_listening = false
-          @read_thread = Thread.new(listen)
+          @read_thread = Thread.new{listen()}
           config.callbacks[:connect].call if config.callbacks[:connect].present?
         end
       end
@@ -30,7 +34,7 @@ module RintCore
 
       def reset!
         @connection.dtr = 0
-        sleep 0.2
+        sleep(config.long_sleep)
         @connection.dtr = 1
       end
 
@@ -44,27 +48,26 @@ module RintCore
       end
 
       def resume!
-        return false unless @paused
-        @paused = false
+        return false unless paused?
+        paused!
         printing!
-        @print_thread = Thread.new(print!)
+        @print_thread = Thread.new{print!()}
         config.callbacks[:resume].call if config.callbacks[:resume].present?
       end
 
       def send(command, wait = 0, priority = false)
-        if @online
-          if @printing
+        if online?
+          if printing?
             priority ? @priority_queue.push(command) : @main_queue.push(command)
           else
-            while ClearPrintingCheck.call do
-              sleep(@sleep_time)
+            until clear_to_send? do
+              sleep(config.sleep_time)
             end
-            wait = @wait if wait == 0 && @wait > 0
-            @clear = false if wait > 0
-            send!(command, @line_number, true)
-            @line_number += 1
-            while WaitCheck.call(wait) do
-              sleep @sleep_time
+            wait = config.wait_period if wait == 0 && config.wait_period > 0
+            not_clear_to_send!
+            send!(command)
+            while wait > 0 && !clear_to_send? do
+              sleep config.sleep_time
               wait -= 1
             end
           end
@@ -79,15 +82,15 @@ module RintCore
 
       def start_print(data, start_index = 0)
         return false unless can_print?
-        @printing = true
+        printing!
         @main_queue = [] + data
         @line_number = 0
         @queue_index = start_index
         @resend_from = -1
+        not_clear_to_send!
         send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
         return true unless data.present?
-        @clear = false
-        @print_thread = Thread.new(print!)
+        @print_thread = Thread.new{print!()}
         return true
       end
 
@@ -101,20 +104,18 @@ private
 
       def readline!
         begin
-          line = @connection.readline
-          config.callbacks[:receive].call(line) if line.length > 1 && config.callbacks[:receive].present?
-          line # return the line
+          line = @connection.readline.strip
         rescue EOFError, Errno::ENODEV => e
-          # TODO: Do something useful
+          config.callbacks[:critcal_error].call(e) if config.callbacks[:critcal_error].present?
         end
       end
 
       def print!
         config.callbacks[:start].call if config.callbacks[:start].present?
-        while OnlinePrintingCheck.call do
+        while online? && printing? do
           advance_queue
         end
-        @sent_lines = []
+        @machine_history = []
         @print_thread.join
         @print_thread = nil
         config.callbacks[:finish].call if config.callbacks[:finish].present?
@@ -122,55 +123,69 @@ private
       end
 
       def listen
-        @clear = true
-        _listen_until_online unless @printing
+        clear_to_send!
+        listen_until_online
         while listen_can_continue? do
           line = readline!
-          break if line.nil?
-          debug_callback.call(line) if line.start_with?('DEBUG_') && debug_callback.respond_to?(:call)
-          @clear = true if line.start_with?(*@greetings, @good_response)
-          temperature_callback.call(line) if line.start_with?(@good_response) && line.include?('T:') && temperature_callback.respond_to?(:call)
-          error_callback.call(line) if line.start_with?('Error') && error_callback.respond_to?(:call)
-          if line.downcase.start_with?(*@resend_response)
-            line = line.sub('N:', ' ').sub('N', ' ').sub(':', ' ')
-            linewords = line.split
-            @resend_from = linewords.pop(0).to_i
-            @clear = true
+          @last_line_received = line
+          case get_response_type(line)
+          when :valid || :online
+            config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
+          when :temperature
+            config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?
+          when :error
+            config.callbacks[:printer_error] if config.callbacks[:printer_error].present?
+            # TODO: Figure out if an error should be raised here or if it should be left to the callback
+          when :resend
+            @resend_from = get_resend_number(line)
+            config.callbacks[:resend] if config.callbacks[:resend].present?
+          when :debug
+            config.callbacks[:debug] if config.callbacks[:debug].present?
+          when :invalid
+            config.callbacks[:invalid_response] if config.callbacks[:invalid_response].present?
+            #break
           end
+          clear_to_send!
         end
-        @clear = true
+        #clear_to_send!
       end
 
       def listen_until_online
-        catch 'BreakOut' do
-          while !@online && listen_can_continue? do
-            send!(RintCore::GCode::Codes::GET_EXT_TEMP)
-            empty_lines = 0
-            while listen_can_continue? do
-              line = readline!
-              throw 'BreakOut' if line.nil?
-              line.blank? ? empty_lines += 1 : empty_lines = 0
-              throw 'BreakOut' if empty_lines == 5
-              if line.start_with?(*@greetings, @good_response)
-                online_callback.call if online_callback.respond_to?(:call)
-                @online = true
-                return true
-              end
-              sleep 0.25
+        begin
+          empty_lines = 0
+          accepted_reponses = [:online,:temperature,:valid]
+          while listen_can_continue? do
+            line = readline!
+            if line.present?
+              empty_lines = 0 
+            else 
+              empty_lines += 1
+              not_clear_to_send!
+              send!(RintCore::GCode::Codes::GET_EXT_TEMP)
             end
+            break if empty_lines == 5
+            if accepted_reponses.include?(get_response_type(line))
+              config.callbacks[:online].call if config.callbacks[:online].present?
+              online!
+              return true
+            end
+            sleep(config.long_sleep)
           end
+          raise "Printer could not be brought online."
+        rescue RuntimeError => e
+          config.callbacks[:critcal_error].call(e) if config.callbacks[:critcal_error].present?
         end
       end
 
       def send!(command, line_number = 0, calc_checksum = false)
         if calc_checksum
           command = prefix_command(command, line_number)
-          @sent_lines[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
+          @machine_history[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
         end
-        if @printer
-          send_callback.call(command) if send_callback.respond_to?(:call)
-          command = (command + "\n").encode(@encoding)
-          @printer.write(command)
+        if connected?
+          config.callbacks[:send].call(command) if online? && config.callbacks[:send].present?
+          command = format_command(command)
+          @connection.write(command)
         end
       end
 

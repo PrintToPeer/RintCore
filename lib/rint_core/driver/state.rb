@@ -1,3 +1,4 @@
+require 'rint_core/g_code/codes'
 require 'active_support/core_ext/object/blank'
 
 module RintCore
@@ -13,7 +14,7 @@ module RintCore
       end
 
       def clear_to_send?
-        @clear
+        @clear && online?
       end
 
       def listen_can_continue?
@@ -21,7 +22,7 @@ module RintCore
       end
 
       def online?
-        @online
+        connected? && @online
       end
 
       def paused?
