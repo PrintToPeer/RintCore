@@ -3,19 +3,18 @@ require 'active_support/core_ext/object/blank'
 
 module RintCore
   module GCode
-    module Line
+    class Line
+      include RintCore::GCode::Codes
 
       attr_accessor :imperial, :relative, :f
+      attr_reader :raw
       attr_writer :x, :y, :z, :e
 
-      def initialize_line(line)
+      def initialize(line)
         @coordinates = ['X','Y','Z','E','F']
-        @f = 0
-
         @number_pattern = /[-]?\d+[.]?\d*/
-
         @raw = line.upcase.strip
-        @raw = @raw.split(RintCore::GCode::Codes.COMMENT_SYMBOL).first if line.include?(RintCore::GCode::Codes.COMMENT_SYMBOL)
+        @raw = @raw.split(COMMENT_SYMBOL).first.strip if line.include?(COMMENT_SYMBOL)
 
         parse_coordinates
       end
@@ -41,8 +40,8 @@ module RintCore
         to_mm @e
       end
 
-      def command(line)
-        if line.present?
+      def command
+        if @raw.present?
           @raw.split(' ').first
         else
           ''
@@ -60,7 +59,23 @@ module RintCore
       end
 
       def is_move?
-        @raw.include?(RintCore::GCode::Codes.RAPID_MOVE) || @raw.include?(RintCore::GCode::Codes.CONTROLLED_MOVE)
+        @raw.start_with?(RAPID_MOVE) || @raw.start_with?(CONTROLLED_MOVE)
+      end
+
+      def travel_move?
+        is_move? && !@e.present?
+      end
+
+      def extrusion_move?
+        is_move? && @e.present? && @e > 0
+      end
+
+      def full_home?
+        command == HOME && @x.blank? && @y.blank? && @z.blank?
+      end
+
+      def to_s
+        @raw
       end
 
     end

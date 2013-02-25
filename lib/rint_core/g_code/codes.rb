@@ -6,7 +6,7 @@ module RintCore
       DWELL           = 'G4'
       HEAD_OFFSET     = 'G10'
       USE_INCHES      = 'G20'
-      USE_MILIMETRES  = 'G21'
+      USE_MILLIMETRES  = 'G21'
       HOME            = 'G28'
       ABS_POSITIONING = 'G90'
       REL_POSITIONING = 'G91'

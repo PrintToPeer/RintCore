@@ -58,6 +58,7 @@ private
       def run_main_queue
         if !paused? && @queue_index < @main_queue.length
           current_line = @main_queue[@queue_index]
+          current_line = current_line.to_s unless current_line.class == String
           unless current_line.blank?
             send!(current_line, @line_number, true)
             @line_number += 1
