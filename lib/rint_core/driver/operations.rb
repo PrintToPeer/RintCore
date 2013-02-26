@@ -129,7 +129,9 @@ private
           line = readline!
           @last_line_received = line
           case get_response_type(line)
-          when :valid || :online
+          when :valid
+            config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
+          when :online
             config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
           when :temperature
             config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?

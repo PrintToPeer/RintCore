@@ -31,36 +31,37 @@ private
         set_variables
 
         @lines.each do |line|
-          if line.command == USE_INCHES
+          case line.command
+          when USE_INCHES
             @imperial = true
-          elsif line.command == USE_MILLIMETRES
+          when USE_MILLIMETRES
             @imperial = false
-          elsif line.command == ABS_POSITIONING
+          when ABS_POSITIONING
             @relative = false
-          elsif line.command == REL_POSITIONING
+          when REL_POSITIONING
             @relative = true
-          elsif line.command == SET_POSITION
-            @current_x = line.x if line.x.present?
-            @current_y = line.y if line.y.present?
-            @current_z = line.z if line.z.present?
-            if line.e.present?
-              @filament_used += @current_e
-              @current_e = line.e
-            end
-          elsif line.command == HOME
+          when SET_POSITION
+            set_positions(line)
+          when HOME
             home_axes(line)
-          elsif line.is_move?
-            line.imperial = @imperial
-            line.relative = @relative
-            measure_travel(line)
-            set_current_position(line)
-            set_limits(line)
+          when RAPID_MOVE
+            movement_line(line)
+          when CONTROLLED_MOVE
+            movement_line(line)
           end
         end
 
-        @width = x_max - x_min
-        @depth = y_max - y_min
-        @height = z_max - z_min
+        @width = @x_max - @x_min
+        @depth = @y_max - @y_min
+        @height = @z_max - @z_min
+      end
+
+      def movement_line(line)
+        line.imperial = @imperial
+        line.relative = @relative
+        measure_travel(line)
+        set_current_position(line)
+        set_limits(line)
       end
 
       def measure_travel(line)
@@ -87,6 +88,16 @@ private
         if line.z.present? || line.full_home?
           @z_travel += @current_z
           @current_z = 0
+        end
+      end
+
+      def set_positions(line)
+        @current_x = line.x if line.x.present?
+        @current_y = line.y if line.y.present?
+        @current_z = line.z if line.z.present?
+        if line.e.present?
+          @filament_used += @current_e
+          @current_e = line.e
         end
       end
 
