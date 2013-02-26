@@ -24,7 +24,6 @@ module RintCore
         end
         preprocess
         measure
-        calculate_filament_usage
       end
 
 private
@@ -46,31 +45,18 @@ private
         end
       end
 
-      def calculate_filament_usage
-        return @filament_used if @filament_used.present?
-        current_e = 0
-        total_e = 0
-        @lines.each do |line|
-          if line.command == SET_POSITION
-            unless line.e.nil?
-              total_e += current_e
-              current_e = line.e
-            end
-          elsif line.is_move? && !line.travel_move?
-            line.relative ? current_e += line.e : current_e = line.e
-          end
-        end
-
-        @filament_used = total_e
-      end
-
       def measure
         set_variables
+
         @lines.each do |line|
           if line.command == SET_POSITION
             @current_x = line.x if line.x.present?
             @current_y = line.y if line.y.present?
             @current_z = line.z if line.z.present?
+            if line.e.present?
+              @filament_used += @current_e
+              @current_e = line.e
+            end
           elsif line.command == HOME
             reset_axes(line)
           elsif line.is_move?
@@ -117,10 +103,12 @@ private
           @current_x += line.x if line.x.present?
           @current_y += line.y if line.y.present?
           @current_z += line.z if line.z.present?
+          @current_e += line.e if line.e.present?
         else
           @current_x = line.x if line.x.present?
           @current_y = line.y if line.y.present?
           @current_z = line.z if line.z.present?
+          @current_e = line.e if line.e.present?
         end
       end
 
@@ -155,6 +143,7 @@ private
         @x_max = -999999999
         @y_max = -999999999
         @z_max = -999999999
+        @filament_used = 0
       end
 
     end
