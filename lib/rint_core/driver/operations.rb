@@ -140,6 +140,13 @@ private
             clear_to_send!
           when :online
             config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
+            if printing? && @queue_index < 10
+              sleep(config.long_sleep)
+              clear_to_send!
+              @queue_index = 0
+            end
+          when :echo
+            config.callbacks[:echo].call(line) if config.callbacks[:echo].present?
           when :temperature
             config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?
           when :temperature_response
