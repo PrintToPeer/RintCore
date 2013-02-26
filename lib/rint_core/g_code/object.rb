@@ -22,13 +22,14 @@ module RintCore
           line = RintCore::GCode::Line.new(line)
           @lines << line if line.raw.present?
         end
-        preprocess
-        measure
+        process
       end
 
 private
 
-      def preprocess
+      def process
+        set_variables
+
         @lines.each do |line|
           if line.command == USE_INCHES
             @imperial = true
@@ -38,18 +39,7 @@ private
             @relative = false
           elsif line.command == REL_POSITIONING
             @relative = true
-          elsif line.is_move?
-            line.imperial = @imperial
-            line.relative = @relative
-          end
-        end
-      end
-
-      def measure
-        set_variables
-
-        @lines.each do |line|
-          if line.command == SET_POSITION
+          elsif line.command == SET_POSITION
             @current_x = line.x if line.x.present?
             @current_y = line.y if line.y.present?
             @current_z = line.z if line.z.present?
@@ -60,6 +50,8 @@ private
           elsif line.command == HOME
             home_axes(line)
           elsif line.is_move?
+            line.imperial = @imperial
+            line.relative = @relative
             measure_travel(line)
             set_current_position(line)
             set_limits(line)
