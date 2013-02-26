@@ -13,8 +13,8 @@ module RintCore
                   :width, :depth, :height
 
       def initialize(data = nil)
-        if data.class == String && self.is_file?(data)
-          data = self.get_file(data)
+        if data.class == String && self.class.is_file?(data)
+          data = self.class.get_file(data)
         end
         return false if data.blank? || data.class != Array
         @raw_data = data
@@ -28,14 +28,12 @@ module RintCore
         process
       end
 
-      class << self
-        def is_file?(file)
-          file.present? && File.exist?(file) && File.file?(file)
-        end
+      def self.is_file?(file)
+        file.present? && File.exist?(file) && File.file?(file)
+      end
 
-        def get_file(file)
-          IO.readlines(file)
-        end
+      def self.get_file(file)
+        IO.readlines(file)
       end
 
 private
