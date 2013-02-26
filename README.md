@@ -5,24 +5,26 @@
 A RepRap/GCode parsing and sending utility written in Ruby.
 
 ### Usage
+Install: ```gem install rintcore```
 
-Clone the repo and cd into it.
-```
-bundle exec irb
-```
+Get stats for a GCode file: ```rintcore analyze my_print.gcode```
+Print a GCode file: ```rintcore print my_print.gcode```
+See more options: ```rintcore help```
+
+Use it somewhere else:
 ```ruby
 require 'rint_core/printer'
+require 'rint_core/g_code/object'
+gcode = RintCore::GCode::Object.new('my_print.gcode')
 printer = RintCore::Printer.new
 printer.port = '/dev/ttyUSB0' # Set to /dev/ttyACM0 by default
 printer.baud = 250000 # Set to 115200 by default
 printer.callbacks[:temperature] = Proc.new { |line| puts(line) }
 printer.connect!
-printer.send 'M105'
-```
+printer.start_print gcode```
 
 ### TODO
-
-Update this list and everything else in general.
+Documentation and spec writing.
 
 ### Contributing
 See CONTRIBUTING.md
@@ -31,7 +33,7 @@ See CONTRIBUTING.md
 
 Copyright (C) 2013  Kaz Walker
 
-The Diver modules are based on printcore.py by Kliment Yanev and various contributors.
+The Driver modules are based on printcore.py by Kliment Yanev and various contributors.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as
