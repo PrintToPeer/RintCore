@@ -7,7 +7,7 @@ module RintCore
     class Object
       include RintCore::GCode::Codes
 
-      attr_accessor :raw_data
+      attr_accessor :raw_data, :layers
       attr_reader :lines, :x_min, :x_max, :y_min, :y_max, :z_min, :z_max,
                   :filament_used, :x_travel, :y_travel, :z_travel, :e_travel,
                   :width, :depth, :height
@@ -47,6 +47,7 @@ private
           when RAPID_MOVE
             movement_line(line)
           when CONTROLLED_MOVE
+            count_layers(line)
             movement_line(line)
           end
         end
@@ -54,6 +55,12 @@ private
         @width = @x_max - @x_min
         @depth = @y_max - @y_min
         @height = @z_max - @z_min
+      end
+
+      def count_layers(line)
+        if line.z.present? && line.z > @current_z
+          @layers += 1
+        end
       end
 
       def movement_line(line)
@@ -147,6 +154,7 @@ private
         @y_max = -999999999
         @z_max = -999999999
         @filament_used = 0
+        @layers = 0
       end
 
     end

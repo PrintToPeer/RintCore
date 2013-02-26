@@ -18,6 +18,7 @@ Gem::Specification.new do |gem|
   gem.require_paths              = ["lib"]
   gem.add_runtime_dependency     'serialport', '1.1.0'
   gem.add_runtime_dependency     'activesupport'
+  gem.add_runtime_dependency     'thor'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
 end

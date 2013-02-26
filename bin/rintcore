@@ -1,0 +1,5 @@
+#!/bin/env ruby
+require 'rubygems'
+require 'rint_core/cli'
+
+RintCore::Cli.start
