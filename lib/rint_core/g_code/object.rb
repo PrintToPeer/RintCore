@@ -25,6 +25,16 @@ module RintCore
         process
       end
 
+      class << self
+        def is_file?(file)
+          file.present? && File.exist?(file) && File.file?(file)
+        end
+
+        def get_file(file)
+          IO.readlines(file)
+        end
+      end
+
 private
 
       def process

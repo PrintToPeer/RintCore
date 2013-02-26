@@ -1,3 +1,5 @@
+require 'rint_core/g_code/codes'
+require 'rint_core/g_code/object'
 require 'serialport'
 require 'active_support/core_ext/object/blank'
 
@@ -12,17 +14,19 @@ module RintCore
           @connection = SerialPort.new(config.port, config.baud)
           @connection.read_timeout = config.read_timeout
           @stop_listening = false
-          @read_thread = Thread.new{listen()}
+          sleep(config.long_sleep)
+          @listening_thread = Thread.new{listen()}
           config.callbacks[:connect].call if config.callbacks[:connect].present?
         end
       end
 
       def disconnect!
         if connected? 
-          if @read_thread
+          if @listening_thread
             @stop_listening = true
-            @read_thread.join
-            @read_thread = nil
+            send!(RintCore::GCode::Codes::GET_EXT_TEMP)
+            @listening_thread.join
+            @listening_thread = nil
           end
           @connection.close
         end
@@ -82,15 +86,16 @@ module RintCore
 
       def start_print(data, start_index = 0)
         return false unless can_print?
+        data = data.lines if data.class == RintCore::GCode::Object
         printing!
         @main_queue = [] + data
         @line_number = 0
         @queue_index = start_index
         @resend_from = -1
-        not_clear_to_send!
         send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
         return true unless data.present?
         @print_thread = Thread.new{print!()}
+        @start_time = Time.now
         return true
       end
 
@@ -100,6 +105,7 @@ private
         @connection = nil
         @listening_thread = nil
         @printing_thread = nil
+        @full_history = []
       end
 
       def readline!
@@ -111,11 +117,11 @@ private
       end
 
       def print!
+        @machine_history = []
         config.callbacks[:start].call if config.callbacks[:start].present?
         while online? && printing? do
           advance_queue
         end
-        @machine_history = []
         @print_thread.join
         @print_thread = nil
         config.callbacks[:finish].call if config.callbacks[:finish].present?
@@ -131,23 +137,28 @@ private
           case get_response_type(line)
           when :valid
             config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
+            clear_to_send!
           when :online
             config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
           when :temperature
             config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?
+          when :temperature_response
+            config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?
+            clear_to_send!
           when :error
             config.callbacks[:printer_error] if config.callbacks[:printer_error].present?
             # TODO: Figure out if an error should be raised here or if it should be left to the callback
           when :resend
             @resend_from = get_resend_number(line)
             config.callbacks[:resend] if config.callbacks[:resend].present?
+            clear_to_send!
           when :debug
             config.callbacks[:debug] if config.callbacks[:debug].present?
           when :invalid
             config.callbacks[:invalid_response] if config.callbacks[:invalid_response].present?
             #break
           end
-          clear_to_send!
+          # clear_to_send!
         end
         #clear_to_send!
       end
@@ -188,6 +199,7 @@ private
           config.callbacks[:send].call(command) if online? && config.callbacks[:send].present?
           command = format_command(command)
           @connection.write(command)
+          @full_history << command
         end
       end
 

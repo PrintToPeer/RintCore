@@ -1,4 +1,4 @@
-#!/bin/env ruby
+#!env ruby
 require 'rubygems'
 require 'rint_core/cli'
 

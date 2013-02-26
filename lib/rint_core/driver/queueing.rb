@@ -51,7 +51,7 @@ private
       def run_priority_queue
         unless @priority_queue.blank?
           send!(@priority_queue.shift)
-          return true
+          # clear_to_send!
         end
       end
 

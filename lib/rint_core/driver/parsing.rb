@@ -15,7 +15,7 @@ module RintCore
 
       def prefix_command(command, line_number)
         prefix = ('N' + line_number.to_s + ' ' + command.strip).encode(config.encoding)
-        prefix + ' ' + '*' + get_checksum(prefix)
+        prefix+'*'+get_checksum(prefix)
       end
 
       def get_response_type(line)
@@ -24,7 +24,8 @@ module RintCore
         return :debug if line.include?(config.debug_response)
         return :online if line.start_with?(*config.online_response)
         return :valid if line.start_with?(*config.good_response) && !line.include?(config.temperature_response)
-        return :temperature if line.start_with?(*config.good_response) && line.include?(config.temperature_response)
+        return :temperature_response if line.start_with?(*config.good_response) && line.include?(config.temperature_response)
+        return :temperature if line.include?(config.temperature_response)
         return :resend if line.start_with?(*config.resend_response)
         return :invalid
       end
