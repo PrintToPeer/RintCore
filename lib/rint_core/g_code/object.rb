@@ -13,6 +13,9 @@ module RintCore
                   :width, :depth, :height
 
       def initialize(data = nil)
+        if data.class == String && self.is_file?(data)
+          data = self.get_file(data)
+        end
         return false if data.blank? || data.class != Array
         @raw_data = data
         @imperial = false
