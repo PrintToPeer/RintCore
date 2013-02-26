@@ -58,7 +58,7 @@ private
               @current_e = line.e
             end
           elsif line.command == HOME
-            reset_axes(line)
+            home_axes(line)
           elsif line.is_move?
             measure_travel(line)
             set_current_position(line)
@@ -83,7 +83,7 @@ private
         end
       end
 
-      def reset_axes(line)
+      def home_axes(line)
         if line.x.present? || line.full_home?
           @x_travel += @current_x
           @current_x = 0
