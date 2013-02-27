@@ -59,6 +59,7 @@ private
           unless current_line.class == String
             current_line.speed_multiplier = config.speed_multiplier if config.speed_multiplier.present?
             current_line.extrusion_multiplier = config.extrusion_multiplier if config.extrusion_multiplier.present?
+            current_line.travel_multiplier = config.travel_multiplier if config.travel_multiplier.present?
             current_line = current_line.to_s
           end
           if current_line.present?

@@ -17,12 +17,17 @@ module RintCore
       #   @!attribute [rw] $3
       #     @param multiplier [Float] number speed (F) will be multiplied by.
       #     @return [nil] if the speed multiplier is not set.
-      #     @return [Float] the speed multiplier.
+      #     @return [Float] the speed multiplier (print moves only).
       #   @!attribute [rw] $4
-      #   @param multiplier [Float] number extrusions (E) will be multiplied by.
-      #   @return [nil] if the extrusion multiplier is not set.
-      #   @return [Float] the extrusion multiplier.
-      attr_accessor :imperial, :relative, :speed_multiplier, :extrusion_multiplier
+      #     @param multiplier [Float] number extrusions (E) will be multiplied by.
+      #     @return [nil] if the extrusion multiplier is not set.
+      #     @return [Float] the extrusion multiplier.
+      #   @!attribute [rw] $5
+      #     @param multiplier [Float] number travel move speeds (F) will be multiplied by.
+      #     @return [nil] if the travel multiplier is not set.
+      #     @return [Float] the travel multiplier.
+      attr_accessor :imperial, :relative, :speed_multiplier, :extrusion_multiplier,
+                    :travel_multiplier
 
       # @!macro attr_reader
       #   @!attribute [r] $1
@@ -126,7 +131,15 @@ module RintCore
       def to_s
         return @raw unless @extrusion_multiplier.present? || @speed_multiplier.present?
 
-        new_f = @f.present? && valid_multiplier?(@speed_multiplier) ? @f * @speed_multiplier : @f
+        if @f.present?
+          if travel_move? && valid_multiplier?(@travel_multiplier)
+            new_f = @f * @travel_multiplier
+          elsif extrusion_move? && valid_multiplier?(@speed_multiplier)
+            new_f = @f * @speed_multiplier
+          else
+            new_f = @f
+          end
+        end
         new_e = @e.present? && valid_multiplier?(@extrusion_multiplier) ? @e * @extrusion_multiplier : @e
 
         x_string = @x.present? ? " X#{@x}" : ''
