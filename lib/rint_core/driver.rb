@@ -5,6 +5,7 @@ require 'rint_core/driver/queueing'
 require 'rint_core/driver/operations'
 
 module RintCore
+  # Conatians the elements of the printer driver.
   module Driver
     include RintCore::Driver::OperatingSystem
     include RintCore::Driver::State
@@ -12,6 +13,7 @@ module RintCore
     include RintCore::Driver::Queueing
     include RintCore::Driver::Operations
     
+    # Calls the initialization functions of the submodules in the correct order
     def initialize_driver
       initialize_state
       initialize_queueing

@@ -4,14 +4,56 @@ require 'active_support/core_ext/object/blank'
 
 module RintCore
   module GCode
+    # A class that represents a processed GCode file.
     class Object
       include RintCore::GCode::Codes
 
-      attr_accessor :raw_data, :layers
+      # An array of the raw Gcode with each line as an element.
+      # @return [Array] of raw GCode without the comments stripped out.
+      attr_accessor :raw_data
+      # @!macro attr_reader
+      #   @!attribute [r] $1
+      #     @return [Array<Line>] an array of {Line}s.
+      #   @!attribute [r] $2
+      #     @return [Float] the smallest X coordinate of an extrusion line.
+      #   @!attribute [r] $3
+      #     @return [Float] the biggest X coordinate of an extrusion line.
+      #   @!attribute [r] $4
+      #     @return [Float] the smallest Y coordinate of an extrusion line.
+      #   @!attribute [r] $5
+      #     @return [Float] the biggest Y coordinate of an extrusion line.
+      #   @!attribute [r] $6
+      #     @return [Float] the smallest Z coordinate.
+      #   @!attribute [r] $7
+      #     @return [Float] the biggest Z coordinate.
+      #   @!attribute [r] $8
+      #     @return [Float] the amount in mm of fliament extruded.
+      #   @!attribute [r] $9
+      #     @return [Float] the distance in total that the X axis will travel in mm.
+      #   @!attribute [r] $10
+      #     @return [Float] the distance in total that the Y axis will travel in mm.
+      #   @!attribute [r] $11
+      #     @return [Float] the distance in total that the Z axis will travel in mm.
+      #   @!attribute [r] $12
+      #     @return [Float] the distance in total that the E axis will travel in mm.
+      #     @todo implement this
+      #   @!attribute [r] $13
+      #     @return [Float] the width of the print.
+      #   @!attribute [r] $14
+      #     @return [Float] the depth of the print.
+      #   @!attribute [r] $15
+      #     @return [Float] the height of the print.
+      #   @!attribute [r] $16
+      #   @return [Fixnum] the number of layers in the print.
       attr_reader :lines, :x_min, :x_max, :y_min, :y_max, :z_min, :z_max,
                   :filament_used, :x_travel, :y_travel, :z_travel, :e_travel,
-                  :width, :depth, :height
+                  :width, :depth, :height, :layers
 
+      # Creates a GCode {Object}.
+      # @param data [String] path to a GCode file on the system.
+      # @param data [Array] with each element being a line of GCode.
+      # @return [Object] if data is valid, returns a GCode {Object}.
+      # @return [false] if data is not an array, path or didn't contain GCode.
       def initialize(data = nil)
         if data.class == String && self.class.is_file?(data)
           data = self.class.get_file(data)
@@ -26,14 +68,35 @@ module RintCore
           @lines << line if line.raw.present?
         end
         process
+        present? ? self : false
       end
 
+      # Checks if the given string is a file and if it exists.
+      # @param file [String] path to a file on the system.
+      # @return [Boolean] true if is a file that exists on the system, false otherwise.
       def self.is_file?(file)
         file.present? && File.exist?(file) && File.file?(file)
       end
 
+      # Returns an array of the lines of the file if it exists.
+      # @param file [String] path to a file on the system.
+      # @return [Array] containting the lines of the given file as elements.
+      # @return [false] if given string isn't a file or doesn't exist.
       def self.get_file(file)
+        return false unless self.is_file?(file)
         IO.readlines(file)
+      end
+
+      # Checks if there are any {Line}s in {#lines}.
+      # @return [Boolean] true if no lines, false otherwise.
+      def blank?
+        @lines.blank?
+      end
+
+      # Opposite of {#blank?}.
+      # @see #blank?
+      def present?
+        @lines.present?
       end
 
 private

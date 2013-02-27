@@ -3,8 +3,10 @@ require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
+    # Handles the parsing of printer responses and formats commands sent to the printer.
     module Parsing
 
+private
       def format_command(command)
         (command.strip + "\n").split(RintCore::GCode::Codes::COMMENT_SYMBOL).first.encode(config.encoding)
       end
@@ -23,9 +25,9 @@ module RintCore
         return :error if line.include?(config.error_response)
         return :debug if line.include?(config.debug_response)
         return :online if line.start_with?(*config.online_response)
-        return :valid if line.start_with?(*config.good_response) && !line.include?(config.temperature_response)
-        return :temperature_response if line.start_with?(*config.good_response) && line.include?(config.temperature_response)
-        return :temperature if line.include?(config.temperature_response)
+        return :valid if line.start_with?(*config.good_response) && !line.include?(*config.temperature_response)
+        return :temperature_response if line.start_with?(*config.good_response) && line.include?(*config.temperature_response)
+        return :temperature if line.include?(*config.temperature_response)
         return :resend if line.start_with?(*config.resend_response)
         return :invalid
       end

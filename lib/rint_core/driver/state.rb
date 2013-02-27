@@ -3,32 +3,35 @@ require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
+    # keeps track of the driver's state
     module State
 
+      # Checks if the printer can start a print.
+      # @return [Boolean] true if printer is ready to print, false otherwise.
       def can_print?
         connected? && online? && !printing?
       end
 
+      # Checks if printer is connected.
+      # @return [Boolean] true if serial port connection is present, false otherwise.
       def connected?
         @connection.present?
       end
 
-      def clear_to_send?
-        @clear && online?
-      end
-
-      def listen_can_continue?
-        !@stop_listening && connected?
-      end
-
+      # Checks if the printer is online.
+      # @return [Boolean] true if online, false otherwise.
       def online?
         connected? && @online
       end
 
+      # Checks if printing is paused.
+      # @return [Boolean] true if pause, false otherwise.
       def paused?
         @paused
       end
 
+      # Checks if the printer is currently printing.
+      # @return [Boolean] true if printing, false otherwise.
       def printing?
         @printing
       end
@@ -43,8 +46,16 @@ private
         @stop_listening = false
       end
 
+      def clear_to_send?
+        @clear && online?
+      end
+
       def clear_to_send!
         @clear = true
+      end
+
+      def listen_can_continue?
+        !@stop_listening && connected?
       end
 
       def not_clear_to_send!

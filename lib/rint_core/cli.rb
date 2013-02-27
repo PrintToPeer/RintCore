@@ -5,11 +5,15 @@ require 'thor'
 require 'active_support/core_ext/object/blank'
 
 module RintCore
+  # Provides command line interfaces for interacting with RintCore's classes.
   class Cli < Thor
     map '-a' => :analyze, '-p' => :print
 
     desc 'analyze FILE', 'Get statistics about the given GCode file.'
     method_option :decimals, default: 2, aliases: '-d', type: :numeric, desc: 'The number of decimal places given for measurements.'
+    # Analyze the given file, also sets the @object instance variable to a {RintCore::GCode::Object}.
+    # @param file [String] path to a GCode file on the system.
+    # @return [String] statistics about the given GCode file.
     def analyze(file)
       unless RintCore::GCode::Object.is_file?(file)
         puts "Non-exsitant file: #{file}"
@@ -38,6 +42,9 @@ EOS
     method_option :port, aliases: '-p', type: :string, desc: 'The port that the printer is connected to.'
     method_option :baud, aliases: '-b', type: :numeric, desc: 'The baud rate at which the printer communicates at.'
     method_option :loud, aliases: '-l', default: false, type: :boolean, desc: 'Output additional info (temperature, progress, etc.)'
+    # Analyzes, then prints the given file.
+    # @param file [String] path to a GCode file on the system.
+    # @return [String] value of the disconnect callback in this function.
     def print(file)
       analyze(file)
       port = options[:port]

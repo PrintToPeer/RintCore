@@ -5,8 +5,11 @@ require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
+    # Provides the raw functionality of the printer.
     module Operations
 
+      # Connects to the printer.
+      # @return [Undefined] returns the value of the connect callback.
       def connect!
         return false if connected?
         if config.port.present? && config.baud.present?
@@ -20,6 +23,8 @@ module RintCore
         end
       end
 
+      # Disconnects to the printer.
+      # @return [Undefined] returns the value of the disconnect callback.
       def disconnect!
         if connected? 
           if @listening_thread
@@ -36,12 +41,18 @@ module RintCore
         config.callbacks[:disconnect].call if config.callbacks[:disconnect].present?
       end
 
+      # Resets the printer.
+      # @return [nil] if not connected.
+      # @return [1] if printer was reset.
       def reset!
+        return nil unless connected?
         @connection.dtr = 0
         sleep(config.long_sleep)
         @connection.dtr = 1
       end
 
+      # Pauses printing.
+      # @return [Undefined] returns the value of the pause callback.
       def pause!
         return false unless printing?
         @paused = true
@@ -51,6 +62,8 @@ module RintCore
         config.callbacks[:pause].call if config.callbacks[:pause].present?
       end
 
+      # Resumes printing.
+      # @return [Undefined] returns the value of the resume callback.
       def resume!
         return false unless paused?
         paused!
@@ -59,6 +72,11 @@ module RintCore
         config.callbacks[:resume].call if config.callbacks[:resume].present?
       end
 
+      # Sends the given command to the printer, if printing, will send command after print completion.
+      # @param command [String] the command to send to the printer.
+      # @param wait [Fixnum] number of times to sleep ({RintCore::Printer.sleep_time}).
+      # @param priority [Boolean] defines if command is a priority.
+      # @todo finalize return value.
       def send(command, wait = 0, priority = false)
         if online?
           if printing?
@@ -80,10 +98,18 @@ module RintCore
         end
       end
 
+      # Sends command to the printer immediately by placing it in the priority queue.
+      # @see send
       def send_now(command, wait = 0)
         send(command, wait, true)
       end
 
+      # Starts a print.
+      # @param data [RintCore::GCode::Object] prints the given object.
+      # @param data [Array] executes the each command in the array.
+      # @param start_index [Fixnum] starts printing from the given index (used by {#pause!} and {#resume!}).
+      # @return [false] if printer isn't ready to print or already printing.
+      # @return [true] if print has been started.
       def start_print(data, start_index = 0)
         return false unless can_print?
         data = data.lines if data.class == RintCore::GCode::Object

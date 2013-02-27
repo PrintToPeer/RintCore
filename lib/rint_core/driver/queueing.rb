@@ -3,6 +3,7 @@ require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
+    # Controls the print queue and manages the sending of commands while printing.
     module Queueing
 
 private

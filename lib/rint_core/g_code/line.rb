@@ -3,43 +3,91 @@ require 'active_support/core_ext/object/blank'
 
 module RintCore
   module GCode
+    # Represents a single line in a GCode file
     class Line
       include RintCore::GCode::Codes
 
-      attr_accessor :imperial, :relative, :f
-      attr_reader :raw
-      attr_writer :x, :y, :z, :e
+      # @!macro attr_accessor
+      #   @!attribute [rw] $1
+      #     @param bool [Boolean] false if metric (default), true if imperial.
+      #     @return [Boolean] false if metric (default), true if imperial.
+      #   @!attribute [rw] $2
+      #     @param bool [Boolean] false if absolute (default), true if realtive.
+      #     @return [Boolean] false if absolute (default), true if relative.
+      attr_accessor :imperial, :relative
 
-      def initialize(line)
+      # @!macro attr_reader
+      #   @!attribute [r] $1
+      #     @return [String] the line, stripped of comments.
+      #   @!attribute [rw] $2
+      #     @param multiplier [Float] number speed (F) will be multiplied by.
+      #     @return [nil] if the speed multiplier is not set.
+      #     @return [Float] the speed multiplier.
+      #   @!attribute [rw] $3
+      #   @param multiplier [Float] number extrusions (E) will be multiplied by.
+      #   @return [nil] if the extrusion multiplier is not set.
+      #   @return [Float] the extrusion multiplier.
+      attr_reader :raw, :speed_multiplier, :extrusion_multiplier
+
+      # Creates a {Line}
+      # @param line [String] a line of GCode.
+      # @param strict [Boolean] return false if GCode doesn't start with a proper command.
+      # @return [false] if GCode doesn't start with a proper command.
+      # @return [Line]
+      def initialize(line, strict = false)
+        return false unless line.present?
         @coordinates = ['X','Y','Z','E','F']
         @number_pattern = /[-]?\d+[.]?\d*/
         @raw = line.upcase.strip
         @raw = @raw.split(COMMENT_SYMBOL).first.strip if line.include?(COMMENT_SYMBOL)
-
+        return false unless !strict && @raw.start_with?(*available_commands)
         parse_coordinates
       end
 
-      def to_mm(number)
-        number *= 25.4 if number.present? && @imperial
-        number
+      # @param multiplier [Float] number extrusions (E) will be multiplied by.
+      # @return [Float] the extrusion multiplier.
+      def extrusion_multiplier=(multiplier)
+        @extrusion_multiplier = check_multiplier(multiplier)
       end
 
+
+      # @param multiplier [Float] number speed (F) will be multiplied by.
+      # @return [Float] the speed multiplier.
+      def speed_multiplier=(multiplier)
+        @extrusion_multiplier = check_multiplier(multiplier)
+      end
+
+      # The X coordinate of the line.
+      # @return [nil] if X not in line.
+      # @return [Float] if X is in line.
       def x
         to_mm @x
       end
 
+
+      # The Y coordinate of the line.
+      # @return [nil] if Y not in line.
+      # @return [Float] if Y is in line.
       def y
         to_mm @y
       end
 
+      # The Z coordinate of the line.
+      # @return [nil] if Z not in line.
+      # @return [Float] if Z is in line.
       def z
         to_mm @z
       end
 
+      # The E coordinate of the line.
+      # @return [nil] if E not in line.
+      # @return [Float] if E is in line.
       def e
         to_mm @e
       end
 
+      # The command in the line.
+      # @return [String] a GCode command or a blank string if one isn't present.
       def command
         if @raw.present?
           @raw.split(' ').first
@@ -47,6 +95,48 @@ module RintCore
           ''
         end
       end
+
+      # Checks if the command in the line causes movement.
+      # @return [Boolean] true if command moves printer, false otherwise.
+      def is_move?
+        @raw.start_with?(RAPID_MOVE) || @raw.start_with?(CONTROLLED_MOVE)
+      end
+
+      # Checks whether the line is a travel move or not.
+      # @return [Boolean] true if line is a travel move, false otherwise.
+      def travel_move?
+        is_move? && !@e.present?
+      end
+
+      # Checks whether the line is as extrusion move or not.
+      # @return [Boolean] true if line is an extrusion move, false otherwise.
+      def extrusion_move?
+        is_move? && @e.present? && @e > 0
+      end
+
+      # Checks wether the line is a full home or not.
+      # @return [Boolean] true if line is full home, false otherwise.
+      def full_home?
+        command == HOME && @x.blank? && @y.blank? && @z.blank?
+      end
+
+      # Returns the line, modified if multipliers are set.
+      # @return [String] the line.
+      def to_s
+        return @raw unless @extrusion_multiplier.present? || @speed_multiplier.present?
+
+        @f = @f * @speed_multiplier if @f.present? && @speed_multiplier.present? && @speed_multiplier > 0
+        @e = @e * @extrusion_multiplier if extrusion_move? && @extrusion_multiplier.present? && @extrusion_multiplier > 0
+        x_string = @x.present? ? " X#{@x}" : ''
+        y_string = @y.present? ? " Y#{@y}" : ''
+        z_string = @z.present? ? " Z#{@z}" : ''
+        e_string = @e.present? ? " E#{@e}" : ''
+        f_string = @f.present? ? " F#{@f}" : ''
+
+        "#{command}#{x_string}#{y_string}#{z_string}#{e_string}#{f_string}"
+      end
+
+private
 
       def get_float(axis)
         @raw.split(axis).last.scan(@number_pattern).first.to_f
@@ -58,24 +148,34 @@ module RintCore
         end
       end
 
-      def is_move?
-        @raw.start_with?(RAPID_MOVE) || @raw.start_with?(CONTROLLED_MOVE)
+      def check_multiplier(multiplier)
+        return nil unless multiplier.present? && multiplier.class == Fixnum && multiplier.class == Float
+        Float(multiplier)
       end
 
-      def travel_move?
-        is_move? && !@e.present?
+      def x=(x)
+        @x = x
       end
 
-      def extrusion_move?
-        is_move? && @e.present? && @e > 0
+      def y=(y)
+        @y = y
       end
 
-      def full_home?
-        command == HOME && @x.blank? && @y.blank? && @z.blank?
+      def z=(z)
+        @z = z
       end
 
-      def to_s
-        @raw
+      def e=(e)
+        @e = e
+      end
+
+      def f=(f)
+        @f = f
+      end
+
+      def to_mm(number)
+        number *= 25.4 if number.present? && @imperial
+        number
       end
 
     end
