@@ -46,7 +46,6 @@ EOS
     # @param file [String] path to a GCode file on the system.
     # @return [String] value of the disconnect callback in this function.
     def print(file)
-      analyze(file)
       port = options[:port]
       baud = options[:baud]
       baud = baud.to_i unless baud.blank?
@@ -63,6 +62,7 @@ EOS
         baud = baud.to_i unless baud.blank?
         baud = nil unless RintCore::Printer.baud_rates.include?(baud)
       end
+      analyze(file)
       printer = RintCore::Printer.new
       printer.port = port
       printer.baud = baud
