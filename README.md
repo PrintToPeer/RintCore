@@ -21,7 +21,8 @@ printer.port = '/dev/ttyUSB0' # Set to /dev/ttyACM0 by default
 printer.baud = 250000 # Set to 115200 by default
 printer.callbacks[:temperature] = Proc.new { |line| puts(line) }
 printer.connect!
-printer.start_print gcode```
+printer.start_print gcode
+```
 
 ### TODO
 Documentation and spec writing.
