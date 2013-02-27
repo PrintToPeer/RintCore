@@ -14,20 +14,20 @@ module RintCore
       #   @!attribute [rw] $2
       #     @param bool [Boolean] false if absolute (default), true if realtive.
       #     @return [Boolean] false if absolute (default), true if relative.
-      attr_accessor :imperial, :relative
+      #   @!attribute [rw] $3
+      #     @param multiplier [Float] number speed (F) will be multiplied by.
+      #     @return [nil] if the speed multiplier is not set.
+      #     @return [Float] the speed multiplier.
+      #   @!attribute [rw] $4
+      #   @param multiplier [Float] number extrusions (E) will be multiplied by.
+      #   @return [nil] if the extrusion multiplier is not set.
+      #   @return [Float] the extrusion multiplier.
+      attr_accessor :imperial, :relative, :speed_multiplier, :extrusion_multiplier
 
       # @!macro attr_reader
       #   @!attribute [r] $1
       #     @return [String] the line, stripped of comments.
-      #   @!attribute [rw] $2
-      #     @param multiplier [Float] number speed (F) will be multiplied by.
-      #     @return [nil] if the speed multiplier is not set.
-      #     @return [Float] the speed multiplier.
-      #   @!attribute [rw] $3
-      #   @param multiplier [Float] number extrusions (E) will be multiplied by.
-      #   @return [nil] if the extrusion multiplier is not set.
-      #   @return [Float] the extrusion multiplier.
-      attr_reader :raw, :speed_multiplier, :extrusion_multiplier
+      attr_reader :raw
 
       # Creates a {Line}
       # @param line [String] a line of GCode.
@@ -46,16 +46,17 @@ module RintCore
 
       # @param multiplier [Float] number extrusions (E) will be multiplied by.
       # @return [Float] the extrusion multiplier.
-      def extrusion_multiplier=(multiplier)
-        @extrusion_multiplier = check_multiplier(multiplier)
-      end
+      # def extrusion_multiplier=(multiplier)
+      #   @extrusion_multiplier = check_multiplier(multiplier)
+      # end
 
 
       # @param multiplier [Float] number speed (F) will be multiplied by.
       # @return [Float] the speed multiplier.
-      def speed_multiplier=(multiplier)
-        @extrusion_multiplier = check_multiplier(multiplier)
-      end
+      # def speed_multiplier=(multiplier)
+      #   @speed_multiplier = check_multiplier(multiplier)
+      #   return @speed_multiplier
+      # end
 
       # The X coordinate of the line.
       # @return [nil] if X not in line.
@@ -125,15 +126,16 @@ module RintCore
       def to_s
         return @raw unless @extrusion_multiplier.present? || @speed_multiplier.present?
 
-        @f = @f * @speed_multiplier if @f.present? && @speed_multiplier.present? && @speed_multiplier > 0
-        @e = @e * @extrusion_multiplier if extrusion_move? && @extrusion_multiplier.present? && @extrusion_multiplier > 0
+        new_f = @f.present? && valid_multiplier?(@speed_multiplier) ? @f * @speed_multiplier : @f
+        new_e = @e.present? && valid_multiplier?(@extrusion_multiplier) ? @e * @extrusion_multiplier : @e
+
         x_string = @x.present? ? " X#{@x}" : ''
         y_string = @y.present? ? " Y#{@y}" : ''
         z_string = @z.present? ? " Z#{@z}" : ''
-        e_string = @e.present? ? " E#{@e}" : ''
-        f_string = @f.present? ? " F#{@f}" : ''
+        e_string = @e.present? ? " E#{new_e}" : ''
+        f_string = @f.present? ? " F#{new_f}" : ''
 
-        "#{command}#{x_string}#{y_string}#{z_string}#{e_string}#{f_string}"
+        "#{command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}"
       end
 
 private
@@ -148,9 +150,8 @@ private
         end
       end
 
-      def check_multiplier(multiplier)
-        return nil unless multiplier.present? && multiplier.class == Fixnum && multiplier.class == Float
-        Float(multiplier)
+      def valid_multiplier?(multiplier)
+        multiplier.present? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0
       end
 
       def x=(x)

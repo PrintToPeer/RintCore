@@ -50,17 +50,18 @@ private
       end
 
       def run_priority_queue
-        unless @priority_queue.blank?
-          send!(@priority_queue.shift)
-          # clear_to_send!
-        end
+        send!(@priority_queue.shift) if @priority_queue.present?
       end
 
       def run_main_queue
         if !paused? && @queue_index < @main_queue.length
           current_line = @main_queue[@queue_index]
-          current_line = current_line.to_s unless current_line.class == String
-          unless current_line.blank?
+          unless current_line.class == String
+            current_line.speed_multiplier = config.speed_multiplier if config.speed_multiplier.present?
+            current_line.extrusion_multiplier = config.extrusion_multiplier if config.extrusion_multiplier.present?
+            current_line = current_line.to_s
+          end
+          if current_line.present?
             send!(current_line, @line_number, true)
             @line_number += 1
           end

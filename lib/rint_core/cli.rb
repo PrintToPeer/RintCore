@@ -79,7 +79,6 @@ EOS
       until printer.online?
         sleep(printer.long_sleep)
       end
-      start_time = Time.now
       printer.start_print(@object)
       while printer.printing?
         printer.send_now(RintCore::GCode::Codes::GET_EXT_TEMP)

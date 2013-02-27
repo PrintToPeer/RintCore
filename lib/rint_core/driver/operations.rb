@@ -42,10 +42,10 @@ module RintCore
       end
 
       # Resets the printer.
-      # @return [nil] if not connected.
+      # @return [false] if not connected.
       # @return [1] if printer was reset.
       def reset!
-        return nil unless connected?
+        return false unless connected?
         @connection.dtr = 0
         sleep(config.long_sleep)
         @connection.dtr = 1
@@ -56,9 +56,12 @@ module RintCore
       def pause!
         return false unless printing?
         @paused = true
-        not_printing!
-        @print_thread.join
+        until @print_thread.alive?
+          sleep(config.sleep_time)
+        end
+        #@print_thread.join
         @print_thread = nil
+        not_printing!
         config.callbacks[:pause].call if config.callbacks[:pause].present?
       end
 
@@ -66,7 +69,7 @@ module RintCore
       # @return [Undefined] returns the value of the resume callback.
       def resume!
         return false unless paused?
-        paused!
+        @paused = false
         printing!
         @print_thread = Thread.new{print!()}
         config.callbacks[:resume].call if config.callbacks[:resume].present?
@@ -130,7 +133,7 @@ private
       def initialize_operations
         @connection = nil
         @listening_thread = nil
-        @printing_thread = nil
+        @print_thread = nil
         @full_history = []
       end
 
@@ -147,6 +150,7 @@ private
         config.callbacks[:start].call if config.callbacks[:start].present?
         while online? && printing? do
           advance_queue
+          return true if paused?
         end
         @print_thread.join
         @print_thread = nil

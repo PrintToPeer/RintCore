@@ -38,10 +38,14 @@ module RintCore
     #     @return [Fixnum] read timeout value for the serial port.
     #   @!attribute [rw] $14
     #     @return [float] used in various places while waiting for responses from the printer.
+    #   @!attribute [rw] $15
+    #     @return [float] speed multiplier.
+    #   @!attribute [rw] $16
+    #     @return [float] extrusion multiplier.
     config_accessor :port, :baud, :callbacks, :error_response, :debug_response,
                     :online_response, :good_response, :temperature_response,
                     :resend_response, :encoding, :sleep_time, :wait_period,
-                    :read_timeout, :long_sleep
+                    :read_timeout, :long_sleep, :speed_multiplier, :extrusion_multiplier
 
     self.port = "/dev/ttyACM0"
     self.baud = 115200
