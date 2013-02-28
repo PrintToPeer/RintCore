@@ -65,7 +65,7 @@ module RintCore
         @lines = []
         data.each do |line|
           line = RintCore::GCode::Line.new(line)
-          @lines << line if line.raw.present?
+          @lines << line# if line.raw.present?
         end
         process
         present? ? self : false
@@ -90,13 +90,13 @@ module RintCore
       # Checks if there are any {Line}s in {#lines}.
       # @return [Boolean] true if no lines, false otherwise.
       def blank?
-        @lines.blank?
+        @lines.empty?
       end
 
       # Opposite of {#blank?}.
       # @see #blank?
       def present?
-        @lines.present?
+        !blank?
       end
 
 private
@@ -132,7 +132,7 @@ private
       end
 
       def count_layers(line)
-        if line.z.present? && line.z > @current_z
+        if !line.z.nil? && line.z > @current_z
           @layers += 1
         end
       end
@@ -147,36 +147,36 @@ private
 
       def measure_travel(line)
         if line.relative
-          @x_travel += line.x.abs if line.x.present?
-          @y_travel += line.y.abs if line.y.present?
-          @z_travel += line.z.abs if line.z.present?
+          @x_travel += line.x.abs unless line.x.nil?
+          @y_travel += line.y.abs unless line.y.nil?
+          @z_travel += line.z.abs unless line.z.nil?
         else
-          @x_travel += (@current_x - line.x).abs if line.x.present?
-          @y_travel += (@current_y - line.y).abs if line.y.present?
-          @z_travel += (@current_z - line.z).abs if line.z.present?
+          @x_travel += (@current_x - line.x).abs unless line.x.nil?
+          @y_travel += (@current_y - line.y).abs unless line.y.nil?
+          @z_travel += (@current_z - line.z).abs unless line.z.nil?
         end
       end
 
       def home_axes(line)
-        if line.x.present? || line.full_home?
+        if !line.x.nil? || line.full_home?
           @x_travel += @current_x
           @current_x = 0
         end
-        if line.y.present? || line.full_home?
+        if !line.y.nil? || line.full_home?
           @y_travel += @current_y
           @current_y = 0
         end
-        if line.z.present? || line.full_home?
+        if !line.z.nil? || line.full_home?
           @z_travel += @current_z
           @current_z = 0
         end
       end
 
       def set_positions(line)
-        @current_x = line.x if line.x.present?
-        @current_y = line.y if line.y.present?
-        @current_z = line.z if line.z.present?
-        if line.e.present?
+        @current_x = line.x unless line.x.nil?
+        @current_y = line.y unless line.y.nil?
+        @current_z = line.z unless line.z.nil?
+        unless line.e.nil?
           @filament_used += @current_e
           @current_e = line.e
         end
@@ -184,30 +184,30 @@ private
 
       def set_current_position(line)
         if line.relative
-          @current_x += line.x if line.x.present?
-          @current_y += line.y if line.y.present?
-          @current_z += line.z if line.z.present?
-          @current_e += line.e if line.e.present?
+          @current_x += line.x unless line.x.nil?
+          @current_y += line.y unless line.y.nil?
+          @current_z += line.z unless line.z.nil?
+          @current_e += line.e unless line.e.nil?
         else
-          @current_x = line.x if line.x.present?
-          @current_y = line.y if line.y.present?
-          @current_z = line.z if line.z.present?
-          @current_e = line.e if line.e.present?
+          @current_x = line.x unless line.x.nil?
+          @current_y = line.y unless line.y.nil?
+          @current_z = line.z unless line.z.nil?
+          @current_e = line.e unless line.e.nil?
         end
       end
 
       def set_limits(line)
         if line.extrusion_move?
-          if line.x.present? && !line.x.zero?
+          unless line.x.nil?
             @x_min = @current_x if @current_x < @x_min
             @x_max = @current_x if @current_x > @x_max
           end
-          if line.y.present? && !line.y.zero?
+          unless line.y.nil?
             @y_min = @current_y if @current_y < @y_min
             @y_max = @current_y if @current_y > @y_max
           end
         end
-        if line.z.present?
+        unless line.z.nil?
           @z_min = @current_z if @current_z < @z_min
           @z_max = @current_z if @current_z > @z_max
         end

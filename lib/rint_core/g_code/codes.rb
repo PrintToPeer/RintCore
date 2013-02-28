@@ -1,4 +1,4 @@
-require 'active_support/core_ext/string/inflections'
+#require 'active_support/core_ext/string/inflections'
 
 module RintCore
   module GCode
@@ -92,13 +92,14 @@ module RintCore
 
       # An array of the constant's values.
       # @return [Array] of GCode commands.
-      def available_commands
-        commands = []
-        RintCore::GCode::Codes.constants.each do |constant|
-          commands << ('RintCore::GCode::Codes::'+constant.to_s).constantize
-        end
-        commands
-      end
+      # REMOVED: major performance issues
+      # def available_commands
+      #   commands = []
+      #   RintCore::GCode::Codes.constants.each do |constant|
+      #     commands << ('RintCore::GCode::Codes::'+constant.to_s).constantize
+      #   end
+      #   commands
+      # end
     end
   end
 end

@@ -34,18 +34,20 @@ module RintCore
       #     @return [String] the line, stripped of comments.
       attr_reader :raw
 
+      @@number_pattern = /[-]?\d+[.]?\d*/
+
       # Creates a {Line}
       # @param line [String] a line of GCode.
       # @param strict [Boolean] return false if GCode doesn't start with a proper command.
       # @return [false] if GCode doesn't start with a proper command.
       # @return [Line]
+      # @todo implement performant stric GCode parsing
       def initialize(line, strict = false)
-        return false unless line.present?
-        @coordinates = ['X','Y','Z','E','F']
-        @number_pattern = /[-]?\d+[.]?\d*/
+        return false if line.nil? || line.empty?
         @raw = line.upcase.strip
         @raw = @raw.split(COMMENT_SYMBOL).first.strip if line.include?(COMMENT_SYMBOL)
-        return false unless !strict && @raw.start_with?(*available_commands)
+        @raw = nil if @raw.empty?
+        # return false unless !strict && @raw.start_with?(*available_commands)  <- needs to be implemented better
         parse_coordinates
       end
 
@@ -95,7 +97,7 @@ module RintCore
       # The command in the line.
       # @return [String] a GCode command or a blank string if one isn't present.
       def command
-        if @raw.present?
+        if !@raw.nil?
           @raw.split(' ').first
         else
           ''
@@ -111,13 +113,13 @@ module RintCore
       # Checks whether the line is a travel move or not.
       # @return [Boolean] true if line is a travel move, false otherwise.
       def travel_move?
-        is_move? && !@e.present?
+        is_move? && @e.nil?
       end
 
       # Checks whether the line is as extrusion move or not.
       # @return [Boolean] true if line is an extrusion move, false otherwise.
       def extrusion_move?
-        is_move? && @e.present? && @e > 0
+        is_move? && !@e.nil? && @e > 0
       end
 
       # Checks wether the line is a full home or not.
@@ -129,9 +131,9 @@ module RintCore
       # Returns the line, modified if multipliers are set.
       # @return [String] the line.
       def to_s
-        return @raw unless @extrusion_multiplier.present? || @speed_multiplier.present?
+        return @raw if @extrusion_multiplier.nil? || @speed_multiplier.nil?
 
-        if @f.present?
+        unless @f.nil?
           if travel_move? && valid_multiplier?(@travel_multiplier)
             new_f = @f * @travel_multiplier
           elsif extrusion_move? && valid_multiplier?(@speed_multiplier)
@@ -140,13 +142,13 @@ module RintCore
             new_f = @f
           end
         end
-        new_e = @e.present? && valid_multiplier?(@extrusion_multiplier) ? @e * @extrusion_multiplier : @e
+        new_e = !@e.nil? && valid_multiplier?(@extrusion_multiplier) ? @e * @extrusion_multiplier : @e
 
-        x_string = @x.present? ? " X#{@x}" : ''
-        y_string = @y.present? ? " Y#{@y}" : ''
-        z_string = @z.present? ? " Z#{@z}" : ''
-        e_string = @e.present? ? " E#{new_e}" : ''
-        f_string = @f.present? ? " F#{new_f}" : ''
+        x_string = !@x.nil? ? " X#{@x}" : ''
+        y_string = !@y.nil? ? " Y#{@y}" : ''
+        z_string = !@z.nil? ? " Z#{@z}" : ''
+        e_string = !@e.nil? ? " E#{new_e}" : ''
+        f_string = !@f.nil? ? " F#{new_f}" : ''
 
         "#{command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}"
       end
@@ -154,17 +156,24 @@ module RintCore
 private
 
       def get_float(axis)
-        @raw.split(axis).last.scan(@number_pattern).first.to_f
+        @raw.split(axis).last.scan(@@number_pattern).first.to_f
       end
 
       def parse_coordinates
-        @coordinates.each do |axis|
-          send(axis.downcase+'=', get_float(axis)) if @raw.include?(axis)
+        unless @raw.nil?
+          @x = get_float('X') if @raw.include?('X')
+          @y = get_float('Y') if @raw.include?('Y')
+          @z = get_float('Z') if @raw.include?('Z')
+          @e = get_float('E') if @raw.include?('E')
+          @f = get_float('F') if @raw.include?('F')
         end
+        # @coordinates.each do |axis|
+        #   send(axis.downcase+'=', get_float(axis)) if !@raw.nil? && @raw.include?(axis)
+        # end
       end
 
       def valid_multiplier?(multiplier)
-        multiplier.present? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0
+        !multiplier.nil? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0
       end
 
       def x=(x)
@@ -188,8 +197,8 @@ private
       end
 
       def to_mm(number)
-        number *= 25.4 if number.present? && @imperial
-        number
+        return number unless @imperial
+        number *= 25.4 if !number.nil?
       end
 
     end
