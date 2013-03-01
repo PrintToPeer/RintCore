@@ -1,6 +1,5 @@
 require 'rint_core/g_code/codes'
 require 'rint_core/g_code/line'
-require 'active_support/core_ext/object/blank'
 
 module RintCore
   module GCode
@@ -58,14 +57,15 @@ module RintCore
         if data.class == String && self.class.is_file?(data)
           data = self.class.get_file(data)
         end
-        return false if data.blank? || data.class != Array
+        return false if data.nil? || data.class != Array
         @raw_data = data
         @imperial = false
         @relative = false
         @lines = []
+        set_variables
         data.each do |line|
           line = RintCore::GCode::Line.new(line)
-          @lines << line# if line.raw.present?
+          @lines << line unless line.command.nil?
         end
         process
         present? ? self : false
@@ -75,7 +75,7 @@ module RintCore
       # @param file [String] path to a file on the system.
       # @return [Boolean] true if is a file that exists on the system, false otherwise.
       def self.is_file?(file)
-        file.present? && File.exist?(file) && File.file?(file)
+        !file.nil? && !file.empty? && File.exist?(file) && File.file?(file)
       end
 
       # Returns an array of the lines of the file if it exists.
@@ -96,7 +96,7 @@ module RintCore
       # Opposite of {#blank?}.
       # @see #blank?
       def present?
-        !blank?
+        !@lines.empty?
       end
 
 private

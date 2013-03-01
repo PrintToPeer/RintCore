@@ -1,5 +1,4 @@
 require 'rint_core/g_code/codes'
-require 'active_support/core_ext/object/blank'
 
 module RintCore
   module GCode
@@ -31,39 +30,37 @@ module RintCore
 
       # @!macro attr_reader
       #   @!attribute [r] $1
+      #     @return [String] the line, upcased and stripped of whitespace.
+      #   @!attribute [r] $2
       #     @return [String] the line, stripped of comments.
-      attr_reader :raw
-
-      @@number_pattern = /[-]?\d+[.]?\d*/
+      #   @!attribute [r] $3
+      #     @return [nil] if the line wasn't valid GCode.
+      #     @return [MatchData] the raw matches from the regular evaluation expression.
+      #   @!attribute [r] $4
+      #     @return [Regexp] the regular expression used to evaluate the line.
+      attr_reader :raw, :command, :matches, :gcode_pattern
 
       # Creates a {Line}
       # @param line [String] a line of GCode.
-      # @param strict [Boolean] return false if GCode doesn't start with a proper command.
-      # @return [false] if GCode doesn't start with a proper command.
+      # @return [false] if line is empty or doesn't match the evaluation expression.
       # @return [Line]
-      # @todo implement performant stric GCode parsing
-      def initialize(line, strict = false)
+      def initialize(line)
         return false if line.nil? || line.empty?
         @raw = line.upcase.strip
-        @raw = @raw.split(COMMENT_SYMBOL).first.strip if line.include?(COMMENT_SYMBOL)
-        @raw = nil if @raw.empty?
-        # return false unless !strict && @raw.start_with?(*available_commands)  <- needs to be implemented better
-        parse_coordinates
+        @gcode_pattern = /^(?<line>(?<command>[G|M]\d{1,3}) ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))? ?([S](?<s_data>\d*))?)? ?;?(?<comment>.*)$/
+        @matches = @raw.match(@gcode_pattern)
+        return false if @matches.nil?
+        unless @matches.nil?
+          @command = @matches[:command].strip unless @matches[:command].nil?
+          @x = @matches[:x_data].to_f unless @matches[:x_data].nil?
+          @y = @matches[:y_data].to_f unless @matches[:y_data].nil?
+          @z = @matches[:z_data].to_f unless @matches[:z_data].nil?
+          @f = @matches[:f_data].to_f unless @matches[:f_data].nil?
+          @e = @matches[:e_data].to_f unless @matches[:e_data].nil?
+          @s = @matches[:s_data].to_i unless @matches[:s_data].nil?
+          @comment = @matches[:comment].strip unless @matches[:comment].nil?
+        end
       end
-
-      # @param multiplier [Float] number extrusions (E) will be multiplied by.
-      # @return [Float] the extrusion multiplier.
-      # def extrusion_multiplier=(multiplier)
-      #   @extrusion_multiplier = check_multiplier(multiplier)
-      # end
-
-
-      # @param multiplier [Float] number speed (F) will be multiplied by.
-      # @return [Float] the speed multiplier.
-      # def speed_multiplier=(multiplier)
-      #   @speed_multiplier = check_multiplier(multiplier)
-      #   return @speed_multiplier
-      # end
 
       # The X coordinate of the line.
       # @return [nil] if X not in line.
@@ -94,20 +91,10 @@ module RintCore
         to_mm @e
       end
 
-      # The command in the line.
-      # @return [String] a GCode command or a blank string if one isn't present.
-      def command
-        if !@raw.nil?
-          @raw.split(' ').first
-        else
-          ''
-        end
-      end
-
       # Checks if the command in the line causes movement.
       # @return [Boolean] true if command moves printer, false otherwise.
       def is_move?
-        @raw.start_with?(RAPID_MOVE) || @raw.start_with?(CONTROLLED_MOVE)
+        @command == RAPID_MOVE || @command == CONTROLLED_MOVE
       end
 
       # Checks whether the line is a travel move or not.
@@ -125,7 +112,7 @@ module RintCore
       # Checks wether the line is a full home or not.
       # @return [Boolean] true if line is full home, false otherwise.
       def full_home?
-        command == HOME && @x.blank? && @y.blank? && @z.blank?
+        @command == HOME && !@x.nil? && !@y.nil? && !@z.nil?
       end
 
       # Returns the line, modified if multipliers are set.
@@ -150,50 +137,13 @@ module RintCore
         e_string = !@e.nil? ? " E#{new_e}" : ''
         f_string = !@f.nil? ? " F#{new_f}" : ''
 
-        "#{command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}"
+        "#{@command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}"
       end
 
 private
 
-      def get_float(axis)
-        @raw.split(axis).last.scan(@@number_pattern).first.to_f
-      end
-
-      def parse_coordinates
-        unless @raw.nil?
-          @x = get_float('X') if @raw.include?('X')
-          @y = get_float('Y') if @raw.include?('Y')
-          @z = get_float('Z') if @raw.include?('Z')
-          @e = get_float('E') if @raw.include?('E')
-          @f = get_float('F') if @raw.include?('F')
-        end
-        # @coordinates.each do |axis|
-        #   send(axis.downcase+'=', get_float(axis)) if !@raw.nil? && @raw.include?(axis)
-        # end
-      end
-
       def valid_multiplier?(multiplier)
         !multiplier.nil? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0
-      end
-
-      def x=(x)
-        @x = x
-      end
-
-      def y=(y)
-        @y = y
-      end
-
-      def z=(z)
-        @z = z
-      end
-
-      def e=(e)
-        @e = e
-      end
-
-      def f=(f)
-        @f = f
       end
 
       def to_mm(number)
