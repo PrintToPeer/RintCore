@@ -51,9 +51,10 @@ module RintCore
       # Creates a GCode {Object}.
       # @param data [String] path to a GCode file on the system.
       # @param data [Array] with each element being a line of GCode.
+      # @param auto_process [Boolean] enable/disable auto processing.
       # @return [Object] if data is valid, returns a GCode {Object}.
       # @return [false] if data is not an array, path or didn't contain GCode.
-      def initialize(data = nil)
+      def initialize(data = nil, auto_process = true)
         if data.class == String && self.class.is_file?(data)
           data = self.class.get_file(data)
         end
@@ -62,13 +63,13 @@ module RintCore
         @imperial = false
         @relative = false
         @lines = []
-        set_variables
+        set_variables if auto_process
         data.each do |line|
           line = RintCore::GCode::Line.new(line)
           @lines << line unless line.command.nil?
         end
-        process
-        present? ? self : false
+        process if auto_process
+        return false unless present?
       end
 
       # Checks if the given string is a file and if it exists.
@@ -138,22 +139,20 @@ private
       end
 
       def movement_line(line)
-        line.imperial = @imperial
-        line.relative = @relative
         measure_travel(line)
         set_current_position(line)
         set_limits(line)
       end
 
       def measure_travel(line)
-        if line.relative
-          @x_travel += line.x.abs unless line.x.nil?
-          @y_travel += line.y.abs unless line.y.nil?
-          @z_travel += line.z.abs unless line.z.nil?
+        if @relative
+          @x_travel += to_mm(line.x).abs unless line.x.nil?
+          @y_travel += to_mm(line.y).abs unless line.y.nil?
+          @z_travel += to_mm(line.z).abs unless line.z.nil?
         else
-          @x_travel += (@current_x - line.x).abs unless line.x.nil?
-          @y_travel += (@current_y - line.y).abs unless line.y.nil?
-          @z_travel += (@current_z - line.z).abs unless line.z.nil?
+          @x_travel += (@current_x - to_mm(line.x)).abs unless line.x.nil?
+          @y_travel += (@current_y - to_mm(line.y)).abs unless line.y.nil?
+          @z_travel += (@current_z - to_mm(line.z)).abs unless line.z.nil?
         end
       end
 
@@ -173,26 +172,26 @@ private
       end
 
       def set_positions(line)
-        @current_x = line.x unless line.x.nil?
-        @current_y = line.y unless line.y.nil?
-        @current_z = line.z unless line.z.nil?
+        @current_x = to_mm(line.x) unless line.x.nil?
+        @current_y = to_mm(line.y) unless line.y.nil?
+        @current_z = to_mm(line.z) unless line.z.nil?
         unless line.e.nil?
           @filament_used += @current_e
-          @current_e = line.e
+          @current_e = to_mm(line.e)
         end
       end
 
       def set_current_position(line)
-        if line.relative
-          @current_x += line.x unless line.x.nil?
-          @current_y += line.y unless line.y.nil?
-          @current_z += line.z unless line.z.nil?
-          @current_e += line.e unless line.e.nil?
+        if @relative
+          @current_x += to_mm(line.x) unless line.x.nil?
+          @current_y += to_mm(line.y) unless line.y.nil?
+          @current_z += to_mm(line.z) unless line.z.nil?
+          @current_e += to_mm(line.e) unless line.e.nil?
         else
-          @current_x = line.x unless line.x.nil?
-          @current_y = line.y unless line.y.nil?
-          @current_z = line.z unless line.z.nil?
-          @current_e = line.e unless line.e.nil?
+          @current_x = to_mm(line.x) unless line.x.nil?
+          @current_y = to_mm(line.y) unless to_mm(line.y).nil?
+          @current_z = to_mm(line.z) unless line.z.nil?
+          @current_e = to_mm(line.e) unless line.e.nil?
         end
       end
 
@@ -229,6 +228,11 @@ private
         @z_max = -999999999
         @filament_used = 0
         @layers = 0
+      end
+
+      def to_mm(number)
+        return number unless @imperial
+        number *= 25.4 if !number.nil?
       end
 
     end
