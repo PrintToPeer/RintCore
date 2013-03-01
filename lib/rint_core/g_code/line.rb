@@ -8,18 +8,19 @@ module RintCore
 
       # @!macro attr_accessor
       #   @!attribute [rw] $1
-      #     @param multiplier [Float] number speed (F) will be multiplied by.
+      #     @param speed_multiplier [Float] number speed (F) will be multiplied by.
       #     @return [nil] if the speed multiplier is not set.
       #     @return [Float] the speed multiplier (print moves only).
       #   @!attribute [rw] $2
-      #     @param multiplier [Float] number extrusions (E) will be multiplied by.
+      #     @param extrusion_multiplier [Float] number extrusions (E) will be multiplied by.
       #     @return [nil] if the extrusion multiplier is not set.
       #     @return [Float] the extrusion multiplier.
       #   @!attribute [rw] $3
-      #     @param multiplier [Float] number travel move speeds (F) will be multiplied by.
+      #     @param travel_multiplier [Float] number travel move speeds (F) will be multiplied by.
       #     @return [nil] if the travel multiplier is not set.
       #     @return [Float] the travel multiplier.
       #   @!attribute [rw] $4
+      #     @param tool_number [Fixnum] the tool used in the command.
       #     @return [Fixnum] the tool used in the command.
       attr_accessor :speed_multiplier, :extrusion_multiplier,
                     :travel_multiplier, :tool_number
@@ -130,7 +131,7 @@ private
         @command = @matches[:command]
         @command_letter = @matches[:command_letter]
         @command_number = @matches[:command_number].to_i unless @matches[:command_number].nil?
-        @tool_number = @command_number unless @matches[:command_letter].nil?
+        @tool_number = @command_number if !@matches[:command_letter].nil? && @matches[:command_letter] == 'T'
       end
 
       def coordinate_assignments

@@ -26,7 +26,7 @@ module RintCore
       #   @!attribute [r] $7
       #     @return [Float] the biggest Z coordinate.
       #   @!attribute [r] $8
-      #     @return [Float] the amount in mm of fliament extruded.
+      #     @return [Array<Float>] the amount in mm of fliament extruded with the index representing the extruder.
       #   @!attribute [r] $9
       #     @return [Float] the distance in total that the X axis will travel in mm.
       #   @!attribute [r] $10
@@ -62,11 +62,14 @@ module RintCore
         @raw_data = data
         @imperial = false
         @relative = false
+        @tool_number = 0
         @lines = []
         set_variables if auto_process
         data.each do |line|
           line = RintCore::GCode::Line.new(line)
           @lines << line unless line.command.nil?
+          @tool_number = line.tool_number unless line.tool_number.nil?
+          line.tool_number = @tool_number
         end
         process if auto_process
         return false unless present?
@@ -176,7 +179,8 @@ private
         @current_y = to_mm(line.y) unless line.y.nil?
         @current_z = to_mm(line.z) unless line.z.nil?
         unless line.e.nil?
-          @filament_used += @current_e
+          @filament_used[line.tool_number] = 0 if @filament_used[line.tool_number].nil?
+          @filament_used[line.tool_number] += @current_e
           @current_e = to_mm(line.e)
         end
       end
@@ -226,7 +230,7 @@ private
         @x_max = -999999999
         @y_max = -999999999
         @z_max = -999999999
-        @filament_used = 0
+        @filament_used = []
         @layers = 0
       end
 
