@@ -2,7 +2,7 @@ require 'rint_core/g_code/codes'
 
 module RintCore
   module GCode
-    # Represents a single line in a GCode file, parse expression tester: {http://rubular.com/r/5zf5Hr489i}
+    # Represents a single line in a GCode file, parse expression tester: {http://rubular.com/r/H7ebW1EIXC}
     class Line
       include RintCore::GCode::Codes
 
