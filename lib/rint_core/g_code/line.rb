@@ -50,16 +50,7 @@ module RintCore
         @gcode_pattern = /^(?<line>(?<command>[G|M]\d{1,3}) ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))? ?([S](?<s_data>\d*))?)? ?;?(?<comment>.*)$/
         @matches = @raw.match(@gcode_pattern)
         return false if @matches.nil?
-        unless @matches.nil?
-          @command = @matches[:command].strip unless @matches[:command].nil?
-          @x = @matches[:x_data].to_f unless @matches[:x_data].nil?
-          @y = @matches[:y_data].to_f unless @matches[:y_data].nil?
-          @z = @matches[:z_data].to_f unless @matches[:z_data].nil?
-          @f = @matches[:f_data].to_f unless @matches[:f_data].nil?
-          @e = @matches[:e_data].to_f unless @matches[:e_data].nil?
-          @s = @matches[:s_data].to_i unless @matches[:s_data].nil?
-          @comment = @matches[:comment].strip unless @matches[:comment].nil?
-        end
+        assign_values unless @matches.nil?
       end
 
       # The X coordinate of the line.
@@ -141,6 +132,17 @@ module RintCore
       end
 
 private
+
+      def assign_values
+        @command = @matches[:command].strip unless @matches[:command].nil?
+        @x = @matches[:x_data].to_f unless @matches[:x_data].nil?
+        @y = @matches[:y_data].to_f unless @matches[:y_data].nil?
+        @z = @matches[:z_data].to_f unless @matches[:z_data].nil?
+        @f = @matches[:f_data].to_f unless @matches[:f_data].nil?
+        @e = @matches[:e_data].to_f unless @matches[:e_data].nil?
+        @s = @matches[:s_data].to_i unless @matches[:s_data].nil?
+        @comment = @matches[:comment].strip unless @matches[:comment].nil?
+      end
 
       def valid_multiplier?(multiplier)
         !multiplier.nil? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0

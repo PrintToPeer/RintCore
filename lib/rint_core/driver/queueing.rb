@@ -56,12 +56,7 @@ private
       def run_main_queue
         if !paused? && @queue_index < @main_queue.length
           current_line = @main_queue[@queue_index]
-          unless current_line.class == String
-            current_line.speed_multiplier = config.speed_multiplier if config.speed_multiplier.present?
-            current_line.extrusion_multiplier = config.extrusion_multiplier if config.extrusion_multiplier.present?
-            current_line.travel_multiplier = config.travel_multiplier if config.travel_multiplier.present?
-            current_line = current_line.to_s
-          end
+          current_line = apply_multipliers(current_line) unless current_line.class == String
           if current_line.present?
             send!(current_line, @line_number, true)
             @line_number += 1
@@ -69,6 +64,13 @@ private
           @queue_index += 1
           return true
         end
+      end
+
+      def apply_multipliers(line)
+        line.speed_multiplier = config.speed_multiplier if config.speed_multiplier.present?
+        line.extrusion_multiplier = config.extrusion_multiplier if config.extrusion_multiplier.present?
+        line.travel_multiplier = config.travel_multiplier if config.travel_multiplier.present?
+        line.to_s
       end
 
     end
