@@ -2,7 +2,7 @@ require 'rint_core/g_code/codes'
 
 module RintCore
   module GCode
-    # Represents a single line in a GCode file, parse expression tester: {http://rubular.com/r/H7ebW1EIXC}
+    # Represents a single line in a GCode file, parse expression tester: {http://rubular.com/}
     class Line
       include RintCore::GCode::Codes
 
@@ -23,8 +23,8 @@ module RintCore
       #     @param tool_number [Fixnum] the tool used in the command.
       #     @return [Fixnum] the tool used in the command.
       #   @!attribute [rw] $5
-      #     @param tool_number [Float] speed of the command.
-      #     @return [Float] the speed of the command.
+      #     @param f [Float] speed of the command (in mm/minute).
+      #     @return [Float] the speed of the command (in mm/minute).
       attr_accessor :speed_multiplier, :extrusion_multiplier,
                     :travel_multiplier, :tool_number, :f
 
