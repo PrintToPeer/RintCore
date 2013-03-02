@@ -31,9 +31,9 @@ module RintCore
             "\tX: #{@object.x_travel.round(decimals)}mm\n"\
             "\tY: #{@object.y_travel.round(decimals)}mm\n"\
             "\tZ: #{@object.z_travel.round(decimals)}mm\n"\
-            "Filament used (per extruder):\n"
+            "Filament used:\n"
       @object.filament_used.each_with_index do |filament,extruder|
-        puts "\t#{extruder}: #{filament.round(decimals)}mm"
+        puts "\tExtruder #{extruder+1}: #{filament.round(decimals)}mm"
       end
       puts "Number of layers: #{@object.layers}\n"\
             "#{@object.raw_data.length} lines / #{@object.lines.length} commands"
