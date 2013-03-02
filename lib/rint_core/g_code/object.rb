@@ -43,25 +43,29 @@ module RintCore
       #   @!attribute [r] $15
       #     @return [Float] the height of the print.
       #   @!attribute [r] $16
-      #   @return [Fixnum] the number of layers in the print.
+      #     @return [Fixnum] the number of layers in the print.
+      #   @!attribute [r] $17
+      #   @return [Float] the estimated durration of the print in seconds.
       attr_reader :lines, :x_min, :x_max, :y_min, :y_max, :z_min, :z_max,
                   :filament_used, :x_travel, :y_travel, :z_travel, :e_travel,
-                  :width, :depth, :height, :layers
+                  :width, :depth, :height, :layers, :total_duration
 
       # Creates a GCode {Object}.
       # @param data [String] path to a GCode file on the system.
       # @param data [Array] with each element being a line of GCode.
-      # @param default_speed [Float] the default speed (in mm/minute) for moves that don't have one declared.
       # @param auto_process [Boolean] enable/disable auto processing.
+      # @param default_speed [Float] the default speed (in mm/minute) for moves that don't have one declared.
+      # @param acceleration [Float] the acceleration rate set in the printer' firmware.
       # @return [Object] if data is valid, returns a GCode {Object}.
       # @return [false] if data is not an array, path, didn't contain GCode or default_speed wasn't a number grater than 0.
-      def initialize(data = nil, default_speed = 2400, auto_process = true)
-        return false if default_speed.nil? && (default_speed.class == Fixnum || default_speed.class == Float) && default_speed <= 0
+      def initialize(data = nil, default_speed = 2400, auto_process = true, acceleration = 1500)
+        return false if positive_number?(default_speed)
+        return false if positive_number?(acceleration)
         if data.class == String && self.class.is_file?(data)
           data = self.class.get_file(data)
         end
         return false if data.nil? || data.class != Array
-        set_variables(data, default_speed)
+        set_variables(data, default_speed, acceleration)
         data.each do |line|
           line = RintCore::GCode::Line.new(line)
           @lines << set_line_properties(line) if line && !line.command.nil?
@@ -112,6 +116,18 @@ module RintCore
         @filament_used.length > 1
       end
 
+      # Returns estimated durration of the print in a human readable format.
+      # @return [String] human readable estimated durration of the print.
+      def durration_in_words
+        duration = @total_duration
+        [[60, :seconds], [60, :minutes], [24, :hours], [1000, :days]].map{ |count, name|
+          if duration > 0
+            duration, n = duration.divmod(count)
+            "#{n.to_i} #{name}"
+          end
+        }.compact.reverse.join(' ')
+      end
+
 private
 
       def process
@@ -136,6 +152,9 @@ private
           when CONTROLLED_MOVE
             count_layers(line)
             movement_line(line)
+            calculate_time(line)
+          when DWELL
+            @total_duration += line.p/1000 unless line.p.nil?
           end
         end
 
@@ -148,14 +167,33 @@ private
         @height = @z_max - @z_min
       end
 
+      def calculate_time(line)
+        @speed_per_second = line.f / 60
+        current_travel = hypot3d(@current_x, @current_y, @current_z, @last_x, @last_y, @last_z)
+        distance = (2*((@last_speed_per_second+@speed_per_second)*(@speed_per_second-@last_speed_per_second)*0.5)/@acceleration).abs
+        if distance <= current_travel && !(@last_speed_per_second+@speed_per_second).zero? && !@speed_per_second.zero?
+          move_duration = 2*distance/(@last_speed_per_second+@speed_per_second)
+          current_travel -= distance
+          move_duration += current_travel/@speed_per_second
+        else
+          move_duration = Math.sqrt(2*distance/@acceleration)
+        end
+        @total_duration += move_duration
+      end
+
       def count_layers(line)
         if !line.z.nil? && line.z > @current_z
           @layers += 1
         end
       end
 
+      def hypot3d(x1, y1, z1, x2 = 0.0, y2 = 0.0, z2 = 0.0)
+        return Math.hypot(x2-x1, Math.hypot(y2-y1, z2-z1))
+      end
+
       def movement_line(line)
         measure_travel(line)
+        set_last_values
         set_current_position(line)
         set_limits(line)
       end
@@ -185,6 +223,17 @@ private
           @z_travel += @current_z
           @current_z = 0
         end
+      end
+
+      def positive_number?(number, grater_than = 0)
+        number.nil? && (number.is_a?(Fixnum) || number.is_a?(Float)) && number >= grater_than
+      end
+
+      def set_last_values
+        @last_x = @current_x
+        @last_y = @current_y
+        @last_z = @current_z
+        @last_speed_per_second = @speed_per_second
       end
 
       def set_positions(line)
@@ -245,6 +294,10 @@ private
         @current_y = 0
         @current_z = 0
         @current_e = 0
+        @last_x = 0
+        @last_y = 0
+        @last_z = 0
+        @last_e = 0
         @x_min = 999999999
         @y_min = 999999999
         @z_min = 0
@@ -253,14 +306,21 @@ private
         @z_max = -999999999
         @filament_used = []
         @layers = 0
+        # Time
+        @speed_per_second = 0.0
+        @last_speed_per_second = 0.0
+        @move_duration = 0.0
+        @total_duration = 0.0
+        @acceleration = 1500.0 #mm/s/s  ASSUMING THE DEFAULT FROM SPRINTER !!!!
       end
 
-      def set_variables(data, default_speed)
+      def set_variables(data, default_speed, acceleration)
         @raw_data = data
         @imperial = false
         @relative = false
         @tool_number = 0
         @speed = default_speed.to_f
+        @acceleration = acceleration
         @lines = []
       end
 

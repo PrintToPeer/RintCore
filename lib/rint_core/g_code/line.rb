@@ -60,8 +60,14 @@ module RintCore
       #   @!attribute [r] $12
       #     @return [nil] if there's no E parameter of the command.
       #     @return [Float] E parameter of the command.
+      #   @!attribute [r] $12
+      #     @return [nil] if there's no S parameter of the command.
+      #     @return [Fixnum] S parameter of the command.
+      #   @!attribute [r] $12
+      #     @return [nil] if there's no P parameter of the command.
+      #     @return [Fixnum] P parameter of the command.
       attr_reader :raw, :matches, :line, :command, :command_letter, :command_number,
-                  :s_data, :p_data, :x, :y, :z, :e
+                  :s_data, :p_data, :x, :y, :z, :e, :s, :p
 
       # Creates a {Line}
       # @param line [String] a line of GCode.

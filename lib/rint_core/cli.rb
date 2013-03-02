@@ -41,7 +41,8 @@ module RintCore
       @object.filament_used.each_with_index do |filament,extruder|
         puts "\tExtruder #{extruder+1}: #{filament.round(decimals)}mm"
       end
-      puts "Number of layers: #{@object.layers}\n"\
+      puts "Estimated duration: #{@object.durration_in_words}"
+            "Number of layers: #{@object.layers}\n"\
             "#{@object.raw_data.length} lines / #{@object.lines.length} commands"
     end
     
