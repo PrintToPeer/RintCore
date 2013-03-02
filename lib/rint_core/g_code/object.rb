@@ -1,11 +1,13 @@
 require 'rint_core/g_code/codes'
 require 'rint_core/g_code/line'
+require 'rint_core/pretty_output'
 
 module RintCore
   module GCode
     # A class that represents a processed GCode file.
     class Object
       include RintCore::GCode::Codes
+      include RintCore::PrettyOutput
 
       # An array of the raw Gcode with each line as an element.
       # @return [Array] of raw GCode without the comments stripped out.
@@ -119,13 +121,7 @@ module RintCore
       # Returns estimated durration of the print in a human readable format.
       # @return [String] human readable estimated durration of the print.
       def durration_in_words
-        duration = @total_duration
-        [[60, :seconds], [60, :minutes], [24, :hours], [1000, :days]].map{ |count, name|
-          if duration > 0
-            duration, n = duration.divmod(count)
-            "#{n.to_i} #{name}"
-          end
-        }.compact.reverse.join(' ')
+        seconds_to_words(@total_duration)
       end
 
 private

@@ -1,10 +1,12 @@
 require 'rint_core/driver'
 require 'active_support/configurable'
+require 'rint_core/pretty_output'
 
 module RintCore
   # Interface for directly intereacting with the printer.
   class Printer
     include RintCore::Driver
+    include RintCore::PrettyOutput
     include ActiveSupport::Configurable
 
     # @!macro config_accessor
@@ -94,13 +96,7 @@ module RintCore
     # @return [String] human readable time since print started, or "0 seconds" if not printing.
     def time_from_start
       @start_time = Time.now unless printing?
-      secs = Time.now - @start_time
-      [[60, :seconds], [60, :minutes], [24, :hours], [1000, :days]].map{ |count, name|
-        if secs > 0
-          secs, n = secs.divmod(count)
-          "#{n.to_i} #{name}"
-        end
-      }.compact.reverse.join(' ')
+      seconds_to_words(Time.now-@start_time)
     end
 
     class << self
