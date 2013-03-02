@@ -64,7 +64,7 @@ module RintCore
         set_variables(data, default_speed)
         data.each do |line|
           line = RintCore::GCode::Line.new(line)
-          @lines << set_line_properties(line) unless line.command.nil?
+          @lines << set_line_properties(line) if line && !line.command.nil?
         end
         process if auto_process
         return false if empty?

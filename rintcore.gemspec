@@ -7,7 +7,7 @@ Gem::Specification.new do |gem|
   gem.name                       = "rintcore"
   gem.version                    = RintCore::VERSION
   gem.authors                    = ["Kaz Walker"]
-  gem.email                      = ["kaz.walker@doopli.co"]
+  gem.email                      = ["kaz.walker@slipline.ca"]
   gem.description                = %q{RepRap/GCode utilities written in Ruby.}
   gem.summary                    = %q{A Ruby implementation of PrintCore.}
   gem.homepage                   = "https://github.com/KazW/RintCore"

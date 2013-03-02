@@ -76,6 +76,12 @@ module RintCore
         assign_values unless @matches.nil?
       end
 
+      # Checks if the given line is more than just a comment.
+      # @return [Boolean] true if empty/invalid
+      def empty?
+        @command.nil?
+      end
+
       # Checks if the command in the line causes movement.
       # @return [Boolean] true if command moves printer, false otherwise.
       def is_move?
