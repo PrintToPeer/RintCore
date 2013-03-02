@@ -22,8 +22,11 @@ module RintCore
       #   @!attribute [rw] $4
       #     @param tool_number [Fixnum] the tool used in the command.
       #     @return [Fixnum] the tool used in the command.
+      #   @!attribute [rw] $5
+      #     @param tool_number [Float] speed of the command.
+      #     @return [Float] the speed of the command.
       attr_accessor :speed_multiplier, :extrusion_multiplier,
-                    :travel_multiplier, :tool_number
+                    :travel_multiplier, :tool_number, :f
 
       # @!macro attr_reader
       #   @!attribute [r] $1
@@ -55,13 +58,10 @@ module RintCore
       #     @return [nil] if there's no Z coordinate of the command.
       #     @return [Float] Z coordinate of the command.
       #   @!attribute [r] $12
-      #     @return [nil] if there's no F parameter of the command.
-      #     @return [Float] F parameter of the command.
-      #   @!attribute [r] $13
       #     @return [nil] if there's no E parameter of the command.
       #     @return [Float] E parameter of the command.
       attr_reader :raw, :matches, :line, :command, :command_letter, :command_number,
-                  :s_data, :p_data, :x, :y, :z, :f, :e
+                  :s_data, :p_data, :x, :y, :z, :e
 
       # Creates a {Line}
       # @param line [String] a line of GCode.
@@ -69,8 +69,8 @@ module RintCore
       # @return [Line]
       def initialize(line)
         return false if line.nil? || line.empty?
-        @raw = line.upcase.strip
-        @gcode_pattern = /^(?<line>(?<command>((?<command_letter>[G|M|T])(?<command_number>\d{1,3}))) ?([S](?<s_data>\d*))? ?([P](?<p_data>\d*))? ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))?)? ?;?(?<comment>.*)$/
+        @raw = line
+        @gcode_pattern = /^(?<line>(?<command>((?<command_letter>[G|M|T])(?<command_number>\d{1,3}))) ?(?<regular_data>([S](?<s_data>\d*))? ?([P](?<p_data>\d*))? ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))?)? (?<string_data>[^;]*)?)? ?;?(?<comment>.*)$/
         @matches = @raw.match(@gcode_pattern)
         return false if @matches.nil?
         assign_values unless @matches.nil?
@@ -105,16 +105,17 @@ module RintCore
       def to_s
         return @line if @extrusion_multiplier.nil? && @speed_multiplier.nil?
 
-        new_f = multiplied_speed unless @f.nil?
+        new_f = multiplied_speed unless is_move?
         new_e = multiplied_extrusion unless @e.nil?
 
         x_string = !@x.nil? ? " X#{@x}" : ''
         y_string = !@y.nil? ? " Y#{@y}" : ''
         z_string = !@z.nil? ? " Z#{@z}" : ''
         e_string = !@e.nil? ? " E#{new_e}" : ''
-        f_string = !@f.nil? ? " F#{new_f}" : ''
+        f_string = is_move? ? " F#{new_f}" : ''
+        string = !@string_data.nil? ? " #{@string_data}" : ''
 
-        "#{@command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}"
+        "#{@command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}#{string}"
       end
 
 private
@@ -124,11 +125,13 @@ private
         coordinate_assignments
         @s = @matches[:s_data].to_i unless @matches[:s_data].nil?
         @p = @matches[:p_data].to_i unless @matches[:p_data].nil?
+        @string_data = @matches[:string_data]
         @comment = @matches[:comment].strip unless @matches[:comment].nil?
       end
 
       def command_assignments
         @command = @matches[:command]
+        @line = @matches[:line] unless @matches[:line].nil?
         @command_letter = @matches[:command_letter]
         @command_number = @matches[:command_number].to_i unless @matches[:command_number].nil?
         @tool_number = @command_number if !@matches[:command_letter].nil? && @matches[:command_letter] == 'T'
@@ -163,7 +166,6 @@ private
       def valid_multiplier?(multiplier)
         !multiplier.nil? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0
       end
-
 
     end
   end

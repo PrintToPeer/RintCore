@@ -20,6 +20,12 @@ module RintCore
         exit
       end
       @object = RintCore::GCode::Object.new(RintCore::GCode::Object.get_file(file))
+
+      unless @object.present?
+        puts "Non-GCode or empty file: #{file}"
+        exit
+      end
+
       decimals = options[:decimals]
       decimals ||= 2
 

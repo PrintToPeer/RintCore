@@ -51,28 +51,23 @@ module RintCore
       # Creates a GCode {Object}.
       # @param data [String] path to a GCode file on the system.
       # @param data [Array] with each element being a line of GCode.
+      # @param default_speed [Float] the default speed (in mm/minute) for moves that don't have one declared.
       # @param auto_process [Boolean] enable/disable auto processing.
       # @return [Object] if data is valid, returns a GCode {Object}.
-      # @return [false] if data is not an array, path or didn't contain GCode.
-      def initialize(data = nil, auto_process = true)
+      # @return [false] if data is not an array, path, didn't contain GCode or default_speed wasn't a number grater than 0.
+      def initialize(data = nil, default_speed = 2400, auto_process = true)
+        return false if default_speed.nil? && (default_speed.class == Fixnum || default_speed.class == Float) && default_speed <= 0
         if data.class == String && self.class.is_file?(data)
           data = self.class.get_file(data)
         end
         return false if data.nil? || data.class != Array
-        @raw_data = data
-        @imperial = false
-        @relative = false
-        @tool_number = 0
-        @lines = []
-        set_variables if auto_process
+        set_variables(data, default_speed)
         data.each do |line|
           line = RintCore::GCode::Line.new(line)
-          @lines << line unless line.command.nil?
-          @tool_number = line.tool_number unless line.tool_number.nil?
-          line.tool_number = @tool_number
+          @lines << set_line_properties(line) unless line.command.nil?
         end
         process if auto_process
-        return false unless present?
+        return false if empty?
       end
 
       # Checks if the given string is a file and if it exists.
@@ -94,19 +89,33 @@ module RintCore
       # Checks if there are any {Line}s in {#lines}.
       # @return [Boolean] true if no lines, false otherwise.
       def blank?
+        empty?
+      end
+
+      # Checks if there are any {Line}s in {#lines}.
+      # @return [Boolean] true if no lines, false otherwise.
+      def empty?
         @lines.empty?
       end
 
-      # Opposite of {#blank?}.
-      # @see #blank?
+      # Opposite of {#empty?}.
+      # @see #empty?
       def present?
-        !@lines.empty?
+        !empty?
+      end
+
+      # Checks if the GCode object contains multiple materials.
+      # @return [nil] if processing hasn't been done.
+      # @return [Boolean] true if multiple extruders used, false otherwise.
+      def multi_material?
+        return nil unless @width
+        @filament_used.length > 1
       end
 
 private
 
       def process
-        set_variables
+        set_processing_variables
 
         @lines.each do |line|
           case line.command
@@ -130,6 +139,10 @@ private
           end
         end
 
+        set_dimensions
+      end
+
+      def set_dimensions
         @width = @x_max - @x_min
         @depth = @y_max - @y_min
         @height = @z_max - @z_min
@@ -216,7 +229,15 @@ private
         end
       end
 
-      def set_variables
+      def set_line_properties(line)
+        @tool_number = line.tool_number unless line.tool_number.nil?
+        line.tool_number = @tool_number if line.tool_number.nil?
+        @speed = line.f unless line.f.nil?
+        line.f = @speed if line.f.nil?
+        line
+      end
+
+      def set_processing_variables
         @x_travel = 0
         @y_travel = 0
         @z_travel = 0
@@ -232,6 +253,15 @@ private
         @z_max = -999999999
         @filament_used = []
         @layers = 0
+      end
+
+      def set_variables(data, default_speed)
+        @raw_data = data
+        @imperial = false
+        @relative = false
+        @tool_number = 0
+        @speed = default_speed.to_f
+        @lines = []
       end
 
       def to_mm(number)
