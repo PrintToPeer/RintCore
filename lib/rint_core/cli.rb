@@ -22,20 +22,21 @@ module RintCore
       @object = RintCore::GCode::Object.new(RintCore::GCode::Object.get_file(file))
       decimals = options[:decimals]
       decimals ||= 2
-      puts "Dimensions:"
-      puts "\tX: #{@object.x_min.round(decimals)} - #{@object.x_max.round(decimals)} (#{@object.width.round(decimals)}mm)"
-      puts "\tY: #{@object.y_min.round(decimals)} - #{@object.y_max.round(decimals)} (#{@object.depth.round(decimals)}mm)"
-      puts "\tZ: #{@object.z_min.round(decimals)} - #{@object.z_max.round(decimals)} (#{@object.height.round(decimals)}mm)"
-      puts "Total Travel:"
-      puts "\tX: #{@object.x_travel.round(decimals)}mm"
-      puts "\tY: #{@object.y_travel.round(decimals)}mm"
-      puts "\tZ: #{@object.z_travel.round(decimals)}mm"
-      puts "Filament used (per extruder):"
+
+      puts "Dimensions:\n"\
+            "\tX: #{@object.x_min.round(decimals)} - #{@object.x_max.round(decimals)} (#{@object.width.round(decimals)}mm)\n"\
+            "\tY: #{@object.y_min.round(decimals)} - #{@object.y_max.round(decimals)} (#{@object.depth.round(decimals)}mm)\n"\
+            "\tZ: #{@object.z_min.round(decimals)} - #{@object.z_max.round(decimals)} (#{@object.height.round(decimals)}mm)\n"\
+            "Total Travel:\n"\
+            "\tX: #{@object.x_travel.round(decimals)}mm\n"\
+            "\tY: #{@object.y_travel.round(decimals)}mm\n"\
+            "\tZ: #{@object.z_travel.round(decimals)}mm\n"\
+            "Filament used (per extruder):\n"
       @object.filament_used.each_with_index do |filament,extruder|
         puts "\t#{extruder}: #{filament.round(decimals)}mm"
       end
-      puts "Number of layers: #{@object.layers}"
-      puts "#{@object.raw_data.length} lines / #{@object.lines.length} commands"
+      puts "Number of layers: #{@object.layers}\n"\
+            "#{@object.raw_data.length} lines / #{@object.lines.length} commands"
     end
     
     desc 'print FILE', 'Print the given GCode file.'
