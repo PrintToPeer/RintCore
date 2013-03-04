@@ -6,6 +6,17 @@ module RintCore
     # Controls the print queue and manages the sending of commands while printing.
     module Queueing
 
+      # Clears the printer's queues.
+      # @return [Boolean] true if successful, false otherwise.
+      def clear_queues!
+        if printing?
+          false
+        else
+          initialize_queueing
+          true
+        end
+      end
+
 private
 
       def initialize_queueing

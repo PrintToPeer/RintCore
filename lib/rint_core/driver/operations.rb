@@ -133,6 +133,13 @@ module RintCore
         print!(gcode)
       end
 
+      # Clears the history of sent commands.
+      # @return [true]
+      def clear_history!(file)
+        @full_history = []
+        true
+      end
+
 private
 
       def initialize_operations

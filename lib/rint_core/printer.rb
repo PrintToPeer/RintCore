@@ -74,12 +74,8 @@ module RintCore
     #   @!attribute [r] $4
     #     @return [Fixnum] normally -1, other wise indicates the position to resend data from in {#machine_history}.
     #   @!attribute [r] $5
-    #     @return [Array] raw us-ascii strings that have been sent to the printer,
-    #       array index reflects the line number, it is emptied upon print completion.
-    #   @!attribute [r] $6
     #     @return [Array] raw us-ascii strings that have been sent to the printer since it has been connected.
-    #     @todo make a method to clear the history
-    attr_reader :last_line_received, :main_queue, :queue_index, :resend_from, :machine_history, :full_history
+    attr_reader :last_line_received, :main_queue, :queue_index, :resend_from, :full_history
 
     # Creates a new {Printer} instance.
     # @param auto_connect [Boolean] if true, {#connect!} will be called.
