@@ -87,9 +87,9 @@ module RintCore
       until printer.online?
         sleep(printer.long_sleep)
       end
-      printer.start_print(@object)
+      printer.print!(@object)
       while printer.printing?
-        printer.send_now(RintCore::GCode::Codes::GET_EXT_TEMP)
+        printer.send_now!(RintCore::GCode::Codes::GET_EXT_TEMP)
         sleep 4.20
         puts "Printed "+((Float(printer.queue_index) / Float(printer.main_queue.length))*100).round(2).to_s+"% in "+printer.time_from_start
         sleep 1

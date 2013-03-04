@@ -32,7 +32,7 @@ private
           unless paused?
             @queue_index = 0
             @line_number = 0
-            send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+            sendsend_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
           end
           return true
         end
@@ -43,7 +43,7 @@ private
           @resend_from = -1
           return nil
         elsif @resend_from < @line_number && @resend_from > -1
-          send!(@machine_history[@resend_from], @resend_from, false)
+          send_to_printer(@machine_history[@resend_from], @resend_from, false)
           @resend_from += 1
           return true
         end
@@ -58,7 +58,7 @@ private
           current_line = @main_queue[@queue_index]
           current_line = apply_multipliers(current_line) unless current_line.class == String
           if current_line.present?
-            send!(current_line, @line_number, true)
+            send_to_printer(current_line, @line_number, true)
             @line_number += 1
           end
           @queue_index += 1

@@ -71,7 +71,7 @@ module RintCore
         return false unless paused?
         @paused = false
         printing!
-        @print_thread = Thread.new{print!()}
+        @print_thread = Thread.new{print()}
         config.callbacks[:resume].call if config.callbacks[:resume].present?
       end
 
@@ -79,7 +79,7 @@ module RintCore
       # @param command [String] the command to send to the printer.
       # @param priority [Boolean] defines if command is a priority.
       # @todo finalize return value.
-      def send(command, priority = false)
+      def send!(command, priority = false)
         if online?
           if printing?
             priority ? @priority_queue.push(command) : @main_queue.push(command)
@@ -88,7 +88,7 @@ module RintCore
               sleep(config.sleep_time)
             end
             not_clear_to_send!
-            send!(command)
+            send_to_printer(command)
           end
         else
           # TODO: log something about not being connected to printer
@@ -97,8 +97,8 @@ module RintCore
 
       # Sends command to the printer immediately by placing it in the priority queue.
       # @see send
-      def send_now(command)
-        send(command, true)
+      def send_now!(command)
+        send!(command, true)
       end
 
       # Starts a print.
@@ -107,7 +107,7 @@ module RintCore
       # @param start_index [Fixnum] starts printing from the given index (used by {#pause!} and {#resume!}).
       # @return [false] if printer isn't ready to print or already printing.
       # @return [true] if print has been started.
-      def print(data, start_index = 0)
+      def print!(data, start_index = 0)
         return false unless can_print?
         data = data.lines if data.class == RintCore::GCode::Object
         printing!
@@ -115,9 +115,9 @@ module RintCore
         @line_number = 0
         @queue_index = start_index
         @resend_from = -1
-        send!(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+        send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
         return true unless data.present?
-        @print_thread = Thread.new{print!()}
+        @print_thread = Thread.new{print()}
         @start_time = Time.now
         return true
       end
@@ -139,7 +139,7 @@ private
         end
       end
 
-      def print!
+      def print
         @machine_history = []
         config.callbacks[:start].call if config.callbacks[:start].present?
         while online? && printing? do
@@ -218,7 +218,7 @@ private
         end
       end
 
-      def send!(command, line_number = 0, calc_checksum = false)
+      def send_to_printer(command, line_number = 0, calc_checksum = false)
         if calc_checksum
           command = prefix_command(command, line_number)
           @machine_history[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
