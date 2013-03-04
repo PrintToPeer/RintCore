@@ -21,15 +21,26 @@ private
       end
 
       def get_response_type(line)
-        return :invalid unless line.present? || line.class == String
-        return :error if line.include?(config.error_response)
-        return :debug if line.include?(config.debug_response)
-        return :online if line.start_with?(*config.online_response)
-        return :valid if line.start_with?(*config.good_response) && !line.include?(*config.temperature_response)
-        return :temperature_response if line.start_with?(*config.good_response) && line.include?(*config.temperature_response)
-        return :temperature if line.include?(*config.temperature_response)
-        return :resend if line.start_with?(*config.resend_response)
-        return :invalid
+        case
+        when ( !line.present? || !line.is_a?(String) )
+          :invalid
+        when line.include?(config.error_response)
+          :error
+        when line.include?(config.debug_response)
+          :debug
+        when line.start_with?(*config.online_response)
+          :online
+        when ( line.start_with?(*config.good_response) && !line.include?(*config.temperature_response) )
+          :valid
+        when ( line.start_with?(*config.good_response) && line.include?(*config.temperature_response) )
+          :temperature_response
+        when ( !line.start_with?(*config.good_response) && line.include?(*config.temperature_response) )
+          :temperature
+        when line.start_with?(*config.resend_response)
+          :resend
+        else
+          :invalid
+        end
       end
 
       def get_resend_number(line)
