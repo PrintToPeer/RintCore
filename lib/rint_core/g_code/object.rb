@@ -48,11 +48,14 @@ module RintCore
       #     @return [Fixnum] the number of layers in the print.
       #   @!attribute [r] $17
       #   @return [Float] the estimated durration of the print in seconds.
-      #   @!attribute [r] $17
+      #   @!attribute [r] $18
       #   @return [Array] of the comments found in the file.
+      #   @!attribute [r] $19
+      #   @return [Array<Hash<Fixnum>>] ranges of commands with their respective layer represented by the array index.
       attr_reader :lines, :x_min, :x_max, :y_min, :y_max, :z_min, :z_max,
                   :filament_used, :x_travel, :y_travel, :z_travel, :e_travel,
-                  :width, :depth, :height, :layers, :total_duration, :comments
+                  :width, :depth, :height, :layers, :total_duration, :comments,
+                  :layer_ranges
 
       # Creates a GCode {Object}.
       # @param data [String] path to a GCode file on the system.
@@ -129,6 +132,20 @@ module RintCore
         seconds_to_words(@total_duration)
       end
 
+      # Get the layer number the given command number is in.
+      # @param command_number [Fixnum] number of the command who's layer number you'd lke to know.
+      # @return [Fixnum] layer number for the given command number.
+      # @return [nil] if the given command number is invalid or if the object wasn't processed.
+      def in_what_layer?(command_number)
+        return nil if @width.nil? || !command_number.is_a?(Fixnum) || command_number < 0 || command_number > @lines.length
+        layer = 1
+        @layers.times do
+          return layer if (@layer_ranges[layer][:lower]..@layer_ranges[layer][:upper]).include?(command_number)
+          layer += 1
+        end
+        nil
+      end
+
 private
 
       def process
@@ -157,6 +174,7 @@ private
           when DWELL
             @total_duration += line.p/1000 unless line.p.nil?
           end
+          @current_line += 1
         end
 
         set_dimensions
@@ -184,7 +202,10 @@ private
 
       def count_layers(line)
         if !line.z.nil? && line.z > @current_z
+          @layer_ranges[@layers][:upper] = @current_line
           @layers += 1
+          @layer_ranges[@layers] = {}
+          @layer_ranges[@layers][:lower] = @current_line
         end
       end
 
@@ -308,7 +329,11 @@ private
         @y_max = -999999999
         @z_max = -999999999
         @filament_used = []
-        @layers = 0
+        @layers = 1
+        @layer_ranges = []
+        @layer_ranges[1] = {}
+        @layer_ranges[1][:lower] = 0
+        @current_line = 0
         # Time
         @speed_per_second = 0.0
         @last_speed_per_second = 0.0
