@@ -43,7 +43,7 @@ module RintCore
       end
       puts "\nNumber of layers: #{@object.layers}\n\n"\
             "Estimated duration: #{@object.durration_in_words}\n\n"\
-            "#{@object.raw_data.length} lines / #{@object.lines.length} commands"
+            "#{@object.raw_data.length} lines / #{@object.lines.length} commands / #{@object.comments.length} comments"
     end
     
     desc 'print FILE', 'Print the given GCode file.'

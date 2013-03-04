@@ -67,10 +67,13 @@ module RintCore
       #     @return [nil] if there's no P parameter of the command.
       #     @return [Fixnum] P parameter of the command.
       #   @!attribute [r] $14
-      #     @return [nil] if there's no string dta for the command.
-      #     @return [Fixnum] extra string data for the command (ex. "filename.gco" in "M23 filename.gco").
+      #     @return [nil] if there's no string data for the command.
+      #     @return [String] extra string data for the command (ex. "filename.gco" in "M23 filename.gco").
+      #   @!attribute [r] $15
+      #     @return [nil] if there's no comment for the command.
+      #     @return [String] the comment for the command.
       attr_reader :raw, :matches, :line, :command, :command_letter, :command_number,
-                  :s_data, :p_data, :x, :y, :z, :e, :s, :p, :string_data
+                  :s_data, :p_data, :x, :y, :z, :e, :s, :p, :string_data, :comment
 
       # Creates a {Line}
       # @param line [String] a line of GCode.
@@ -82,7 +85,7 @@ module RintCore
         @gcode_pattern = /^(?<line>(?<command>((?<command_letter>[G|M|T])(?<command_number>\d{1,3}))) ?(?<regular_data>([S](?<s_data>\d*))? ?([P](?<p_data>\d*))? ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))?)? (?<string_data>[^;]*)?)? ?;?(?<comment>.*)$/
         @matches = @raw.match(@gcode_pattern)
         return false if @matches.nil?
-        assign_values unless @matches.nil?
+        assign_values
       end
 
       # Checks if the given line is more than just a comment.

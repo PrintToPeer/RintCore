@@ -48,9 +48,11 @@ module RintCore
       #     @return [Fixnum] the number of layers in the print.
       #   @!attribute [r] $17
       #   @return [Float] the estimated durration of the print in seconds.
+      #   @!attribute [r] $17
+      #   @return [Array] of the comments found in the file.
       attr_reader :lines, :x_min, :x_max, :y_min, :y_max, :z_min, :z_max,
                   :filament_used, :x_travel, :y_travel, :z_travel, :e_travel,
-                  :width, :depth, :height, :layers, :total_duration
+                  :width, :depth, :height, :layers, :total_duration, :comments
 
       # Creates a GCode {Object}.
       # @param data [String] path to a GCode file on the system.
@@ -68,9 +70,12 @@ module RintCore
         end
         return false if data.nil? || data.class != Array
         set_variables(data, default_speed, acceleration)
-        data.each do |line|
-          line = RintCore::GCode::Line.new(line)
-          @lines << set_line_properties(line) if line && !line.command.nil?
+        @raw_data.each do |line|
+          line = set_line_properties(RintCore::GCode::Line.new(line))
+          if line
+            @lines << line unless line.command.nil?
+            @comments << line.comment unless line.comment.nil?
+          end
         end
         process if auto_process
         return false if empty?
@@ -275,6 +280,8 @@ private
       end
 
       def set_line_properties(line)
+        return false unless line
+        return line if line.command.nil?
         @tool_number = line.tool_number unless line.tool_number.nil?
         line.tool_number = @tool_number if line.tool_number.nil?
         @speed = line.f unless line.f.nil?
@@ -318,6 +325,7 @@ private
         @speed = default_speed.to_f
         @acceleration = acceleration
         @lines = []
+        @comments = []
       end
 
       def to_mm(number)
