@@ -200,7 +200,7 @@ private
             # TODO: Figure out if an error should be raised here or if it should be left to the callback
           when :resend
             @resend_from = get_resend_number(line)
-            config.callbacks[:resend] if config.callbacks[:resend].present?
+            config.callbacks[:resend].call(line) if config.callbacks[:resend].present?
             clear_to_send!
           when :debug
             config.callbacks[:debug] if config.callbacks[:debug].present?

@@ -78,6 +78,7 @@ module RintCore
       printer.callbacks[:start] = Proc.new { puts "Started printing!" }
       printer.callbacks[:finish] = Proc.new { puts "Print took: "+printer.time_from_start }
       printer.callbacks[:temperature] = Proc.new { |line| puts line }
+      printer.callbacks[:resend] = Proc.new { |line| puts "RESENDING LINE: "+line }
       if options[:loud]
         printer.callbacks[:receive] = Proc.new { |line| puts "Got: "+line }
         printer.callbacks[:send] = Proc.new { |line| puts "Sent: "+line }
