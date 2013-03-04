@@ -109,7 +109,8 @@ module RintCore
       # @return [true] if print has been started.
       def print!(data, start_index = 0)
         return false unless can_print?
-        data = data.lines if data.class == RintCore::GCode::Object
+        data = data.lines if data.is_a?(RintCore::GCode::Object)
+        return false unless data.is_a?(Array)
         printing!
         @main_queue = [] + data
         @line_number = 0
