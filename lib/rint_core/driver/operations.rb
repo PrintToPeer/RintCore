@@ -122,6 +122,16 @@ module RintCore
         return true
       end
 
+      # Starts printing the given file.
+      # @param file [String] file name of a GCode file on the system.
+      # @see print!
+      def print_file!(file)
+        return false unless can_print?
+        gcode = RintCore::GCode::Object.new(file, 2400, auto_process = false)
+        return false unless gcode
+        print!(gcode)
+      end
+
 private
 
       def initialize_operations
