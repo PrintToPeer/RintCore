@@ -100,8 +100,8 @@ module RintCore
         IO.readlines(file)
       end
 
-      # Checks if there are any {Line}s in {#lines}.
-      # @return [Boolean] true if no lines, false otherwise.
+      # alias for {#empty?}.
+      # @see #empty?
       def blank?
         empty?
       end
@@ -176,7 +176,7 @@ private
           end
           @current_line += 1
         end
-
+        @layer_ranges[@layers][:upper] = @current_line
         set_dimensions
       end
 

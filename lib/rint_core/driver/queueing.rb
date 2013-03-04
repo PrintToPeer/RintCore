@@ -20,7 +20,8 @@ module RintCore
 private
 
       def initialize_queueing
-        @main_queue = []
+        @gcode_object = nil
+        @current_layer = nil
         @priority_queue = []
         @queue_index = 0
         @line_number = 0
@@ -43,7 +44,7 @@ private
           unless paused?
             @queue_index = 0
             @line_number = 0
-            sendsend_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+            send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
           end
           return true
         end
@@ -61,14 +62,15 @@ private
       end
 
       def run_priority_queue
-        send!(@priority_queue.shift) if @priority_queue.present?
+        send_to_printer(@priority_queue.shift) if @priority_queue.present?
       end
 
       def run_main_queue
-        if !paused? && @queue_index < @main_queue.length
-          current_line = @main_queue[@queue_index]
-          current_line = apply_multipliers(current_line) unless current_line.class == String
-          if current_line.present?
+        if !paused? && @queue_index < @gcode_object.lines.length
+          current_line = @gcode_object.lines[@queue_index]
+          current_line = apply_multipliers(current_line)
+          @current_layer = @gcode_object.in_what_layer?(@queue_index)
+          unless current_line.empty?
             send_to_printer(current_line, @line_number, true)
             @line_number += 1
           end

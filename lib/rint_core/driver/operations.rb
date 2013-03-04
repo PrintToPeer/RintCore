@@ -59,7 +59,6 @@ module RintCore
         until @print_thread.alive?
           sleep(config.sleep_time)
         end
-        #@print_thread.join
         @print_thread = nil
         not_printing!
         config.callbacks[:pause].call if config.callbacks[:pause].present?
@@ -82,7 +81,11 @@ module RintCore
       def send!(command, priority = false)
         if online?
           if printing?
-            priority ? @priority_queue.push(command) : @main_queue.push(command)
+            if priority 
+              @priority_queue.push(command)\
+            else
+              return(nil)
+            end
           else
             until clear_to_send? do
               sleep(config.sleep_time)
@@ -91,7 +94,7 @@ module RintCore
             send_to_printer(command)
           end
         else
-          # TODO: log something about not being connected to printer
+          config.callbacks[:send_error].call if config.callbacks[:send_error].present?
         end
       end
 
@@ -102,22 +105,20 @@ module RintCore
       end
 
       # Starts a print.
-      # @param data [RintCore::GCode::Object] prints the given object.
-      # @param data [Array] executes each command in the array.
+      # @param gcode [RintCore::GCode::Object] prints the given object.
       # @param start_index [Fixnum] starts printing from the given index (used by {#pause!} and {#resume!}).
       # @return [false] if printer isn't ready to print or already printing.
       # @return [true] if print has been started.
-      def print!(data, start_index = 0)
+      def print!(gcode, start_index = 0)
         return false unless can_print?
-        data = data.lines if data.is_a?(RintCore::GCode::Object)
-        return false unless data.is_a?(Array)
+        return false unless gcode.is_a?(RintCore::GCode::Object)
         printing!
-        @main_queue = [] + data
+        @gcode_object = gcode
         @line_number = 0
         @queue_index = start_index
         @resend_from = -1
         send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
-        return true unless data.present?
+        return true unless gcode.present?
         @print_thread = Thread.new{print()}
         @start_time = Time.now
         return true
@@ -147,6 +148,7 @@ private
         @listening_thread = nil
         @print_thread = nil
         @full_history = []
+        @start_time = nil
       end
 
       def readline!
@@ -164,9 +166,11 @@ private
           advance_queue
           return true if paused?
         end
+        config.callbacks[:finish].call if config.callbacks[:finish].present?
+        @start_time = nil
+        initialize_queueing
         @print_thread.join
         @print_thread = nil
-        config.callbacks[:finish].call if config.callbacks[:finish].present?
         return true
       end
 
@@ -202,11 +206,8 @@ private
             config.callbacks[:debug] if config.callbacks[:debug].present?
           when :invalid
             config.callbacks[:invalid_response] if config.callbacks[:invalid_response].present?
-            #break
           end
-          # clear_to_send!
         end
-        #clear_to_send!
       end
 
       def listen_until_online

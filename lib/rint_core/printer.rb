@@ -68,14 +68,17 @@ module RintCore
     #   @!attribute [r] $1
     #     @return [String] the last line read from the printer
     #   @!attribute [r] $2
-    #   @return [Array] consists of raw strings of GCode or {GCode::Object}s
+    #     @return [RintCore::GCode::Object] GCode object that is printing.
     #   @!attribute [r] $3
-    #     @return [Fixnum] 0 if not printer, other wise indicates the position in {#main_queue}
+    #     @return [Fixnum] 0 if not printing, other wise indicates the position in {#gcode_object}
     #   @!attribute [r] $4
     #     @return [Fixnum] normally -1, other wise indicates the position to resend data from in {#machine_history}.
     #   @!attribute [r] $5
     #     @return [Array] raw us-ascii strings that have been sent to the printer since it has been connected.
-    attr_reader :last_line_received, :main_queue, :queue_index, :resend_from, :full_history
+    #   @!attribute [r] $6
+    #     @return [Fixnum] layer currently being printed.
+    #     @return [nil] if not printing.
+    attr_reader :last_line_received, :gcode_object, :queue_index, :resend_from, :full_history, :current_layer
 
     # Creates a new {Printer} instance.
     # @param auto_connect [Boolean] if true, {#connect!} will be called.
@@ -88,7 +91,8 @@ module RintCore
     # Returns the time since a print has started in human readable format, returns "0 seconds" if not printing.
     # @return [String] human readable time since print started, or "0 seconds" if not printing.
     def time_from_start
-      @start_time = Time.now unless printing?
+      start_time ||= @start_time
+      start_time ||= Time.now
       seconds_to_words(Time.now-@start_time)
     end
 
