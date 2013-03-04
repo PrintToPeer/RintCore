@@ -77,10 +77,9 @@ module RintCore
 
       # Sends the given command to the printer, if printing, will send command after print completion.
       # @param command [String] the command to send to the printer.
-      # @param wait [Fixnum] number of times to sleep ({RintCore::Printer.sleep_time}).
       # @param priority [Boolean] defines if command is a priority.
       # @todo finalize return value.
-      def send(command, wait = 0, priority = false)
+      def send(command, priority = false)
         if online?
           if printing?
             priority ? @priority_queue.push(command) : @main_queue.push(command)
@@ -88,13 +87,8 @@ module RintCore
             until clear_to_send? do
               sleep(config.sleep_time)
             end
-            wait = config.wait_period if wait == 0 && config.wait_period > 0
             not_clear_to_send!
             send!(command)
-            while wait > 0 && !clear_to_send? do
-              sleep config.sleep_time
-              wait -= 1
-            end
           end
         else
           # TODO: log something about not being connected to printer
@@ -103,17 +97,17 @@ module RintCore
 
       # Sends command to the printer immediately by placing it in the priority queue.
       # @see send
-      def send_now(command, wait = 0)
-        send(command, wait, true)
+      def send_now(command)
+        send(command, true)
       end
 
       # Starts a print.
       # @param data [RintCore::GCode::Object] prints the given object.
-      # @param data [Array] executes the each command in the array.
+      # @param data [Array] executes each command in the array.
       # @param start_index [Fixnum] starts printing from the given index (used by {#pause!} and {#resume!}).
       # @return [false] if printer isn't ready to print or already printing.
       # @return [true] if print has been started.
-      def start_print(data, start_index = 0)
+      def print(data, start_index = 0)
         return false unless can_print?
         data = data.lines if data.class == RintCore::GCode::Object
         printing!

@@ -35,21 +35,19 @@ module RintCore
     #   @!attribute [rw] $11
     #     @return [Float] the amount of time to sleep while waiting for the line to become clear before sending.
     #   @!attribute [rw] $12
-    #     @return [Fixnum] the number of times to sleep ({#sleep_time}) after sending a command.
-    #   @!attribute [rw] $13
     #     @return [Fixnum] read timeout value for the serial port.
-    #   @!attribute [rw] $14
+    #   @!attribute [rw] $13
     #     @return [Float] used in various places while waiting for responses from the printer.
-    #   @!attribute [rw] $15
+    #   @!attribute [rw] $14
     #     @return [Float] speed multiplier (print moves only).
-    #   @!attribute [rw] $16
+    #   @!attribute [rw] $15
     #     @return [Float] extrusion multiplier.
-    #   @!attribute [rw] $17
-    #     @return [Float] travel move multiplier.
+    #   @!attribute [rw] $16
+    #     @return [Float] travel move speed multiplier.
     config_accessor :port, :baud, :callbacks, :error_response, :debug_response,
                     :online_response, :good_response, :temperature_response,
-                    :resend_response, :encoding, :sleep_time, :wait_period,
-                    :read_timeout, :long_sleep, :speed_multiplier, :extrusion_multiplier,
+                    :resend_response, :encoding, :sleep_time, :read_timeout,
+                    :long_sleep, :speed_multiplier, :extrusion_multiplier,
                     :travel_multiplier
 
     self.port = "/dev/ttyACM0"
@@ -63,7 +61,6 @@ module RintCore
     self.resend_response = ['rs','resend']
     self.encoding = 'us-ascii'
     self.sleep_time = 0.001
-    self.wait_period = 0
     self.read_timeout = 0
     self.long_sleep = 0.25
 
