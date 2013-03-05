@@ -118,22 +118,23 @@ module RintCore
         @command == HOME && !@x.nil? && !@y.nil? && !@z.nil?
       end
 
-      # Returns the line, modified if multipliers are set.
+      # Returns the line, modified if multipliers are set and a line number is given.
       # @return [String] the line.
-      def to_s
-        return @line if @extrusion_multiplier.nil? && @speed_multiplier.nil?
+      def to_s(line_number = nil)
+        return @line if line_number.nil? || !line_number.is_a?(Fixnum)
+        return prefix_line(@line, line_number) if @extrusion_multiplier.nil? && @speed_multiplier.nil?
 
-        new_f = multiplied_speed unless is_move?
-        new_e = multiplied_extrusion unless @e.nil?
+        new_f = multiplied_speed
+        new_e = multiplied_extrusion
 
         x_string = !@x.nil? ? " X#{@x}" : ''
         y_string = !@y.nil? ? " Y#{@y}" : ''
         z_string = !@z.nil? ? " Z#{@z}" : ''
         e_string = !@e.nil? ? " E#{new_e}" : ''
-        f_string = is_move? ? " F#{new_f}" : ''
+        f_string = !@f.nil? ? " F#{new_f}" : ''
         string = !@string_data.nil? ? " #{@string_data}" : ''
 
-        "#{@command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}#{string}"
+        prefix_line("#{@command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}#{string}", line_number)
       end
 
 private
@@ -143,13 +144,13 @@ private
         coordinate_assignments
         @s = @matches[:s_data].to_i unless @matches[:s_data].nil?
         @p = @matches[:p_data].to_i unless @matches[:p_data].nil?
-        @string_data = @matches[:string_data]
+        @string_data = @matches[:string_data].strip unless @matches[:string_data].nil? || @matches[:string_data].empty?
         @comment = @matches[:comment].strip unless @matches[:comment].nil?
       end
 
       def command_assignments
         @command = @matches[:command]
-        @line = @matches[:line] unless @matches[:line].nil?
+        @line = @matches[:line].strip unless @matches[:line].nil?
         @command_letter = @matches[:command_letter]
         @command_number = @matches[:command_number].to_i unless @matches[:command_number].nil?
         @tool_number = @command_number if !@matches[:command_letter].nil? && @matches[:command_letter] == 'T'
@@ -164,7 +165,7 @@ private
       end
 
       def multiplied_extrusion
-        if valid_multiplier?(@extrusion_multiplier)
+        if !@e.nil? && valid_multiplier?(@extrusion_multiplier)
           return @e * @extrusion_multiplier
         else
           @e
@@ -183,6 +184,15 @@ private
 
       def valid_multiplier?(multiplier)
         !multiplier.nil? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0
+      end
+
+      def get_checksum(command)
+        command.bytes.inject{|a,b| a^b}.to_s
+      end
+
+      def prefix_line(command, line_number)
+        prefix = 'N' + line_number.to_s + ' ' + command
+        (prefix+'*'+get_checksum(prefix))
       end
 
     end

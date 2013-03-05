@@ -1,5 +1,4 @@
-require 'rint_core/g_code/codes'
-require 'rint_core/g_code/object'
+require 'rint_core/g_code'
 require 'serialport'
 require 'active_support/core_ext/object/blank'
 
@@ -82,7 +81,7 @@ module RintCore
         if online?
           if printing?
             if priority 
-              @priority_queue.push(command)\
+              @priority_queue.push(command)
             else
               return(nil)
             end
@@ -237,19 +236,24 @@ private
         end
       end
 
-      def send_to_printer(command, line_number = 0, calc_checksum = false)
-        if calc_checksum
-          command = prefix_command(command, line_number)
-          @machine_history[line_number] = command unless command.include?(RintCore::GCode::Codes::SET_LINE_NUM)
+      def send_to_printer(line, line_number = nil, calc_checksum = false)
+        line = RintCore::GCode::Line.new(line) if line.is_a?(String)
+        return false unless line
+        if line.is_a?(RintCore::GCode::Line)
+          if calc_checksum && line_number
+            @machine_history[line_number] = line.to_s unless line.command == RintCore::GCode::Codes::SET_LINE_NUM
+            line = line.to_s(line_number)
+          else
+            line = line.to_s
+          end
         end
+        line = format_command(line)
         if connected?
-          config.callbacks[:send].call(command) if online? && config.callbacks[:send].present?
-          command = format_command(command)
-          @connection.write(command)
-          @full_history << command
+          config.callbacks[:send].call(line) if online? && config.callbacks[:send].present?
+          @connection.write(line)
+          @full_history << line
         end
       end
-
 
     end
   end

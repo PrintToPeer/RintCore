@@ -76,7 +76,7 @@ module RintCore
         @raw_data.each do |line|
           line = set_line_properties(RintCore::GCode::Line.new(line))
           if line
-            @lines << line unless line.command.nil?
+            @lines << line unless line.empty?
             @comments << line.comment unless line.comment.nil?
           end
         end

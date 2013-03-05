@@ -7,19 +7,7 @@ module RintCore
     module Parsing
 
 private
-      def format_command(command)
-        (command.strip + "\n").split(RintCore::GCode::Codes::COMMENT_SYMBOL).first.encode(config.encoding)
-      end
-
-      def get_checksum(command)
-        command.bytes.inject{|a,b| a^b}.to_s
-      end
-
-      def prefix_command(command, line_number)
-        prefix = ('N' + line_number.to_s + ' ' + command.strip).encode(config.encoding)
-        prefix+'*'+get_checksum(prefix)
-      end
-
+      
       def get_response_type(line)
         case
         when ( !line.present? || !line.is_a?(String) )
@@ -41,6 +29,10 @@ private
         else
           :invalid
         end
+      end
+
+      def format_command(line)
+        (line + "\n").encode(config.encoding)
       end
 
       def get_resend_number(line)
