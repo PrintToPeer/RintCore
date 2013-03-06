@@ -73,24 +73,29 @@ module RintCore
         config.callbacks[:resume].call if config.callbacks[:resume].present?
       end
 
-      # Sends the given command to the printer, if printing, will send command after print completion.
+      # Sends the given command to the printer.
       # @param command [String] the command to send to the printer.
       # @param priority [Boolean] defines if command is a priority.
       # @todo finalize return value.
       def send!(command, priority = false)
+        return nil unless command.is_a?(String) || command.is_a?(Array)
         if online?
           if printing?
             if priority 
-              @priority_queue.push(command)
+              @priority_queue.push(command) if command.is_a?(String)
+              @priority_queue + command if command.is_a?(Array)
+              return true
             else
-              return(nil)
+              return false
             end
           else
-            until clear_to_send? do
-              sleep(config.sleep_time)
+            if command.is_a?(Array)
+              command.each do |line|
+                wait_then_send(line)
+              end
+            else
+              wait_then_send(command)
             end
-            not_clear_to_send!
-            send_to_printer(command)
           end
         else
           config.callbacks[:send_error].call if config.callbacks[:send_error].present?
@@ -116,6 +121,8 @@ module RintCore
         @line_number = 0
         @queue_index = start_index
         @resend_from = -1
+        wait_until_clear
+        not_clear_to_send!
         send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
         return true unless gcode.present?
         @print_thread = Thread.new{print()}
@@ -183,12 +190,6 @@ private
           when :valid
             config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
             clear_to_send!
-          when :online
-            config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
-            if printing? && @queue_index.zero?
-              sleep(config.long_sleep)
-              clear_to_send!
-            end
           when :temperature
             config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?
           when :temperature_response
@@ -238,7 +239,7 @@ private
 
       def send_to_printer(line, line_number = nil, calc_checksum = false)
         line = RintCore::GCode::Line.new(line) if line.is_a?(String)
-        return false unless line
+        return false if line.command.nil?
         if line.is_a?(RintCore::GCode::Line)
           if calc_checksum && line_number
             @machine_history[line_number] = line.to_s unless line.command == RintCore::GCode::Codes::SET_LINE_NUM
@@ -252,6 +253,19 @@ private
           config.callbacks[:send].call(line) if online? && config.callbacks[:send].present?
           @connection.write(line)
           @full_history << line
+          return true
+        end
+      end
+
+      def wait_then_send(line)
+        wait_until_clear
+        not_clear_to_send!
+        send_to_printer(line)
+      end
+
+      def wait_until_clear
+        until clear_to_send? do
+          sleep(config.sleep_time)
         end
       end
 

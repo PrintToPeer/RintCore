@@ -31,9 +31,7 @@ private
 
       def advance_queue
         return false unless online? && printing?
-        until clear_to_send? do
-          sleep(config.sleep_time)
-        end
+        wait_until_clear
         not_clear_to_send!
         return true if resend_line
         return true if run_priority_queue
