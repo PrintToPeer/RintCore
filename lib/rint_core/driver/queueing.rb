@@ -63,15 +63,19 @@ private
       end
 
       def run_main_queue
-        if !paused? && @queue_index < @gcode_object.lines.length
+        return nil if paused?
+        if !config.low_power && @queue_index < @gcode_object.lines.length
           apply_multipliers
           @current_layer = @gcode_object.in_what_layer?(@queue_index)
           send_to_printer(@gcode_object.lines[@queue_index], @line_number, true)
-          @line_number += 1
-          @queue_index += 1
-          return true
+        elsif config.low_power && @queue_index < @gcode_object.length
+          @current_layer ||= 0
+          send_to_printer(@gcode_object[@queue_index], @line_number, true)
         end
-      end
+        @line_number += 1
+        @queue_index += 1
+        return true
+    end
 
       def apply_multipliers
         @gcode_object.lines[@queue_index].speed_multiplier = config.speed_multiplier unless config.speed_multiplier.nil?

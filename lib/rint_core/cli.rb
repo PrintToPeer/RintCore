@@ -91,14 +91,20 @@ module RintCore
         sleep(printer.long_sleep)
       end
       printer.print!(@object)
+      if low_power
+        @object = nil
+        GC.start
+      end
       run_time = Time.now
       while printer.printing?
-        loop_time = Time.now
-        if loop_time - run_time >= 5
-          printer.send_now!(RintCore::GCode::Codes::GET_EXT_TEMP)
-          puts "Printed "+((Float(printer.queue_index) / Float(@object.lines.length))*100).round(2).to_s+"% in "+printer.time_from_start+\
-                "... On layer #{printer.current_layer} of #{@object.layers}"
-          run_time = Time.now
+        unless low_power
+          loop_time = Time.now
+          if loop_time - run_time >= 5
+            printer.send_now!(RintCore::GCode::Codes::GET_EXT_TEMP)
+            puts "Printed "+((Float(printer.queue_index) / Float(@object.lines.length))*100).round(2).to_s+"% in "+printer.time_from_start+\
+                  "... On layer #{printer.current_layer} of #{@object.layers}"
+            run_time = Time.now
+          end
         end
       end
       printer.disconnect!
