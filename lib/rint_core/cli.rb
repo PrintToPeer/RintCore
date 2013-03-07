@@ -49,12 +49,14 @@ module RintCore
     method_option :port, aliases: '-p', type: :string, desc: 'The port that the printer is connected to.'
     method_option :baud, aliases: '-b', type: :numeric, desc: 'The baud rate at which the printer communicates at.'
     method_option :loud, aliases: '-l', default: false, type: :boolean, desc: 'Output additional info (temperature, progress, etc.)'
+    method_option :low_power, aliases: '-r', default: false, type: :boolean, desc: 'Put driver into low power mode. (consume less CPU while printing)'
     # Analyzes, then prints the given file.
     # @param file [String] path to a GCode file on the system.
     # @return [String] value of the disconnect callback in this function.
     def print(file)
       port = options[:port]
       baud = options[:baud]
+      low_power = options[:low_power]
       baud = baud unless baud.nil?
       baud = nil unless RintCore::Printer.baud_rates.include?(baud)
       port = nil unless RintCore::Printer.is_port?(port)
@@ -73,6 +75,7 @@ module RintCore
       printer = RintCore::Printer.new
       printer.port = port
       printer.baud = baud
+      printer.low_power = low_power
       printer.callbacks[:online] = Proc.new { puts "Printer online!" }
       printer.callbacks[:start] = Proc.new { puts "Started printing!" }
       printer.callbacks[:finish] = Proc.new { puts "Print took: "+printer.time_from_start }
