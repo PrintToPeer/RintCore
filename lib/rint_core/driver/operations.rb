@@ -126,7 +126,7 @@ module RintCore
         return true unless gcode.present?
         if low_power?
           new_gcode = []
-          @gcode_object.each_with_index do |line,line_number|
+          @gcode_object.lines.each_with_index do |line,line_number|
             new_gcode << line.to_s(line_number)
           end
           @gcode_object = new_gcode
