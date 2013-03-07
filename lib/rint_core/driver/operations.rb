@@ -124,6 +124,15 @@ module RintCore
         not_clear_to_send!
         send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
         return true unless gcode.present?
+        if low_power?
+          new_gcode = []
+          @gcode_object.each_with_index do |line,line_number|
+            new_gcode << line.to_s(line_number)
+          end
+          @gcode_object = new_gcode
+          new_gcode = nil
+          GC.start
+        end
         @print_thread = Thread.new{print()}
         @start_time = Time.now
         return true
@@ -229,14 +238,14 @@ private
       end
 
       def send_to_printer(line, line_number = nil, calc_checksum = false)
-        line = RintCore::GCode::Line.new(line) if line.is_a?(String)
-        return false if line.command.nil?
+        line = RintCore::GCode::Line.new(line) if line.is_a?(String) unless low_power?
+        return false if line.nil? || line.empty?
         if line.is_a?(RintCore::GCode::Line)
           if calc_checksum && line_number
             @machine_history[line_number] = line.to_s unless line.command == RintCore::GCode::Codes::SET_LINE_NUM
             line = line.to_s(line_number)
           else
-            line = line.to_s
+            line = line.to_s unless low_power?
           end
         end
         line = format_command(line)

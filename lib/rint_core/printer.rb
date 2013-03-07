@@ -44,11 +44,13 @@ module RintCore
     #     @return [Float] extrusion multiplier.
     #   @!attribute [rw] $16
     #     @return [Float] travel move speed multiplier.
+    #   @!attribute [rw] $17
+    #     @return [Boolean] reduce the number of operations at print time for low power devices (Raspberry Pi).
     config_accessor :port, :baud, :callbacks, :error_response, :debug_response,
                     :online_response, :good_response, :temperature_response,
                     :resend_response, :encoding, :sleep_time, :read_timeout,
                     :long_sleep, :speed_multiplier, :extrusion_multiplier,
-                    :travel_multiplier
+                    :travel_multiplier, :low_power
 
     self.port = "/dev/ttyACM0"
     self.baud = 115200
@@ -63,6 +65,7 @@ module RintCore
     self.sleep_time = 0.001
     self.read_timeout = 0
     self.long_sleep = 0.25
+    self.low_power = false
 
     # @!macro attr_reader
     #   @!attribute [r] $1

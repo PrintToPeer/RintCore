@@ -17,6 +17,12 @@ module RintCore
         !@connection.nil?
       end
 
+      # Checks if driver is in (less CPU intensive) low power mode.
+      # @return [Boolean] true if low power flag set, false otherwise.
+      def low_power?
+        config.low_power && printing?
+      end
+
       # Checks if the printer is online.
       # @return [Boolean] true if online, false otherwise.
       def online?
