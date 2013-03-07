@@ -49,7 +49,7 @@ module RintCore
       #   @!attribute [r] $17
       #   @return [Float] the estimated durration of the print in seconds.
       #   @!attribute [r] $18
-      #   @return [Array] of the comments found in the file.
+      #   @return [Array] of the lines that only contained comments found in the file.
       #   @!attribute [r] $19
       #   @return [Array<Hash<Fixnum>>] ranges of commands with their respective layer represented by the array index.
       attr_reader :lines, :x_min, :x_max, :y_min, :y_max, :z_min, :z_max,
@@ -76,8 +76,11 @@ module RintCore
         @raw_data.each do |line|
           line = set_line_properties(RintCore::GCode::Line.new(line))
           if line
-            @lines << line unless line.empty?
-            @comments << line.comment unless line.comment.nil?
+            unless line.empty?
+              @lines << line
+            else
+              @comments << line.comment
+            end
           end
         end
         process if auto_process
