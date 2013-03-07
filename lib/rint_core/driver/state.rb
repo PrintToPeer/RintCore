@@ -1,5 +1,4 @@
 require 'rint_core/g_code/codes'
-require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
@@ -15,7 +14,7 @@ module RintCore
       # Checks if printer is connected.
       # @return [Boolean] true if serial port connection is present, false otherwise.
       def connected?
-        @connection.present?
+        !@connection.nil?
       end
 
       # Checks if the printer is online.

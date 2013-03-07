@@ -1,5 +1,4 @@
 require 'rint_core/g_code/codes'
-require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
@@ -10,7 +9,7 @@ private
       
       def get_response_type(line)
         case
-        when ( !line.present? || !line.is_a?(String) )
+        when ( line.nil? || !line.is_a?(String) )
           :invalid
         when line.include?(config.error_response)
           :error

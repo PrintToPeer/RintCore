@@ -1,5 +1,3 @@
-#require 'active_support/core_ext/string/inflections'
-
 module RintCore
   module GCode
     # Contains GCodes.
@@ -89,17 +87,6 @@ module RintCore
       # Comment symbol
       # @todo Move this to a configurable option.
       COMMENT_SYMBOL  = ';'
-
-      # An array of the constant's values.
-      # @return [Array] of GCode commands.
-      # REMOVED: major performance issues
-      # def available_commands
-      #   commands = []
-      #   RintCore::GCode::Codes.constants.each do |constant|
-      #     commands << ('RintCore::GCode::Codes::'+constant.to_s).constantize
-      #   end
-      #   commands
-      # end
     end
   end
 end

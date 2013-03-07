@@ -2,7 +2,6 @@ require 'rint_core/g_code/object'
 require 'rint_core/printer'
 require 'rint_core/g_code/codes'
 require 'thor'
-require 'active_support/core_ext/object/blank'
 
 module RintCore
   # Provides command line interfaces for interacting with RintCore's classes.
@@ -56,18 +55,18 @@ module RintCore
     def print(file)
       port = options[:port]
       baud = options[:baud]
-      baud = baud.to_i unless baud.blank?
+      baud = baud unless baud.nil?
       baud = nil unless RintCore::Printer.baud_rates.include?(baud)
       port = nil unless RintCore::Printer.is_port?(port)
-      while port.blank?
+      while port.nil?
         puts "Please enter the port and press enter:"
         port = $stdin.gets.strip
         port = nil unless RintCore::Printer.is_port?(port)
       end
-      while baud.blank?
+      while baud.nil?
         puts "Please enter the baud rate and press enter:"
         baud = $stdin.gets.strip
-        baud = baud.to_i unless baud.blank?
+        baud = baud.to_i unless baud.empty?
         baud = nil unless RintCore::Printer.baud_rates.include?(baud)
       end
       analyze(file)

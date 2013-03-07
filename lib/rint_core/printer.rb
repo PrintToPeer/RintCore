@@ -74,11 +74,9 @@ module RintCore
     #   @!attribute [r] $4
     #     @return [Fixnum] normally -1, other wise indicates the position to resend data from in {#machine_history}.
     #   @!attribute [r] $5
-    #     @return [Array] raw us-ascii strings that have been sent to the printer since it has been connected.
-    #   @!attribute [r] $6
     #     @return [Fixnum] layer currently being printed.
     #     @return [nil] if not printing.
-    attr_reader :last_line_received, :gcode_object, :queue_index, :resend_from, :full_history, :current_layer
+    attr_reader :last_line_received, :gcode_object, :queue_index, :resend_from, :current_layer
 
     # Creates a new {Printer} instance.
     # @param auto_connect [Boolean] if true, {#connect!} will be called.
@@ -107,7 +105,7 @@ module RintCore
       # @param port [String] a path on the local file system.
       # @return [Boolean] true if given path is a tty, false otherwise.
       def is_port?(port)
-         port.present? && File.exist?(port) && File.new(port).isatty
+         !port.nil? && File.exist?(port) && File.new(port).isatty
       end
     end
 

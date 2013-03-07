@@ -1,6 +1,5 @@
 require 'rint_core/g_code'
 require 'serialport'
-require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
@@ -11,14 +10,14 @@ module RintCore
       # @return [Undefined] returns the value of the connect callback.
       def connect!
         return false if connected?
-        if config.port.present? && config.baud.present?
+        unless config.port.nil? && config.baud.nil?
           disable_hup(config.port)
           @connection = SerialPort.new(config.port, config.baud)
           @connection.read_timeout = config.read_timeout
           @stop_listening = false
           sleep(config.long_sleep)
           @listening_thread = Thread.new{listen()}
-          config.callbacks[:connect].call if config.callbacks[:connect].present?
+          config.callbacks[:connect].call unless config.callbacks[:connect].nil?
         end
       end
 
@@ -37,7 +36,7 @@ module RintCore
         @connection = nil
         offline!
         not_printing!
-        config.callbacks[:disconnect].call if config.callbacks[:disconnect].present?
+        config.callbacks[:disconnect].call unless config.callbacks[:disconnect].nil?
       end
 
       # Resets the printer.
@@ -60,7 +59,7 @@ module RintCore
         end
         @print_thread = nil
         not_printing!
-        config.callbacks[:pause].call if config.callbacks[:pause].present?
+        config.callbacks[:pause].call unless config.callbacks[:pause].nil?
       end
 
       # Resumes printing.
@@ -70,7 +69,7 @@ module RintCore
         @paused = false
         printing!
         @print_thread = Thread.new{print()}
-        config.callbacks[:resume].call if config.callbacks[:resume].present?
+        config.callbacks[:resume].call unless config.callbacks[:resume].nil?
       end
 
       # Sends the given command to the printer.
@@ -98,7 +97,7 @@ module RintCore
             end
           end
         else
-          config.callbacks[:send_error].call if config.callbacks[:send_error].present?
+          config.callbacks[:send_error].call unless config.callbacks[:send_error].nil?
         end
       end
 
@@ -140,20 +139,12 @@ module RintCore
         print!(gcode)
       end
 
-      # Clears the history of sent commands.
-      # @return [true]
-      def clear_history!(file)
-        @full_history = []
-        true
-      end
-
 private
 
       def initialize_operations
         @connection = nil
         @listening_thread = nil
         @print_thread = nil
-        @full_history = []
         @start_time = nil
       end
 
@@ -161,18 +152,18 @@ private
         begin
           line = @connection.readline.strip
         rescue EOFError, Errno::ENODEV => e
-          config.callbacks[:critcal_error].call(e) if config.callbacks[:critcal_error].present?
+          config.callbacks[:critcal_error].call(e) unless config.callbacks[:critcal_error].nil?
         end
       end
 
       def print
         @machine_history = []
-        config.callbacks[:start].call if config.callbacks[:start].present?
+        config.callbacks[:start].call unless config.callbacks[:start].nil?
         while online? && printing? do
           advance_queue
           return true if paused?
         end
-        config.callbacks[:finish].call if config.callbacks[:finish].present?
+        config.callbacks[:finish].call unless config.callbacks[:finish].nil?
         @start_time = nil
         initialize_queueing
         @print_thread.join
@@ -188,24 +179,24 @@ private
           @last_line_received = line
           case get_response_type(line)
           when :valid
-            config.callbacks[:receive].call(line) if config.callbacks[:receive].present?
+            config.callbacks[:receive].call(line) unless config.callbacks[:receive].nil?
             clear_to_send!
           when :temperature
-            config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?
+            config.callbacks[:temperature].call(line) unless config.callbacks[:temperature].nil?
           when :temperature_response
-            config.callbacks[:temperature].call(line) if config.callbacks[:temperature].present?
+            config.callbacks[:temperature].call(line) unless config.callbacks[:temperature].nil?
             clear_to_send!
           when :error
-            config.callbacks[:printer_error] if config.callbacks[:printer_error].present?
+            config.callbacks[:printer_error] unless config.callbacks[:printer_error].nil?
             # TODO: Figure out if an error should be raised here or if it should be left to the callback
           when :resend
             @resend_from = get_resend_number(line)
-            config.callbacks[:resend].call(line) if config.callbacks[:resend].present?
+            config.callbacks[:resend].call(line) unless config.callbacks[:resend].nil?
             clear_to_send!
           when :debug
-            config.callbacks[:debug] if config.callbacks[:debug].present?
+            config.callbacks[:debug] unless config.callbacks[:debug].nil?
           when :invalid
-            config.callbacks[:invalid_response] if config.callbacks[:invalid_response].present?
+            config.callbacks[:invalid_response] unless config.callbacks[:invalid_response].nil?
           end
         end
       end
@@ -216,7 +207,7 @@ private
           accepted_reponses = [:online,:temperature,:valid]
           while listen_can_continue? do
             line = readline!
-            if line.present?
+            unless line.empty?
               empty_lines = 0 
             else 
               empty_lines += 1
@@ -225,7 +216,7 @@ private
             end
             break if empty_lines == 5
             if accepted_reponses.include?(get_response_type(line))
-              config.callbacks[:online].call if config.callbacks[:online].present?
+              config.callbacks[:online].call unless config.callbacks[:online].nil?
               online!
               return true
             end
@@ -233,7 +224,7 @@ private
           end
           raise "Printer could not be brought online."
         rescue RuntimeError => e
-          config.callbacks[:critcal_error].call(e) if config.callbacks[:critcal_error].present?
+          config.callbacks[:critcal_error].call(e) unless config.callbacks[:critcal_error].nil?
         end
       end
 
@@ -250,9 +241,8 @@ private
         end
         line = format_command(line)
         if connected?
-          config.callbacks[:send].call(line) if online? && config.callbacks[:send].present?
+          config.callbacks[:send].call(line) if online? && !config.callbacks[:send].nil?
           @connection.write(line)
-          @full_history << line
           return true
         end
       end

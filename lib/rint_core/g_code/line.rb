@@ -47,7 +47,6 @@ module RintCore
         return false if line.nil? || line.empty?
         @raw = line
         @matches = @raw.match(GCODE_PATTERN)
-        @matches ||= @raw.match(COMMENT_PATTERN)
         return false if @matches.nil?
         # assign_values
         @f = @matches[:f_data].to_f unless @matches[:f_data].nil?

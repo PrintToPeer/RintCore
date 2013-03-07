@@ -1,5 +1,4 @@
 require 'rint_core/g_code/codes'
-require 'active_support/core_ext/object/blank'
 
 module RintCore
   module Driver
@@ -60,26 +59,24 @@ private
       end
 
       def run_priority_queue
-        send_to_printer(@priority_queue.shift) if @priority_queue.present?
+        send_to_printer(@priority_queue.shift) unless @priority_queue.empty?
       end
 
       def run_main_queue
         if !paused? && @queue_index < @gcode_object.lines.length
-          current_line = @gcode_object.lines[@queue_index]
-          current_line = apply_multipliers(current_line)
+          apply_multipliers
           @current_layer = @gcode_object.in_what_layer?(@queue_index)
-          send_to_printer(current_line, @line_number, true)
+          send_to_printer(@gcode_object.lines[@queue_index], @line_number, true)
           @line_number += 1
           @queue_index += 1
           return true
         end
       end
 
-      def apply_multipliers(line)
-        line.speed_multiplier = config.speed_multiplier if config.speed_multiplier.present?
-        line.extrusion_multiplier = config.extrusion_multiplier if config.extrusion_multiplier.present?
-        line.travel_multiplier = config.travel_multiplier if config.travel_multiplier.present?
-        line
+      def apply_multipliers
+        @gcode_object.lines[@queue_index].speed_multiplier = config.speed_multiplier unless config.speed_multiplier.nil?
+        @gcode_object.lines[@queue_index].extrusion_multiplier = config.extrusion_multiplier unless config.extrusion_multiplier.nil?
+        @gcode_object.lines[@queue_index].travel_multiplier = config.travel_multiplier unless config.travel_multiplier.nil?
       end
 
     end
