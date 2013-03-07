@@ -191,9 +191,7 @@ private
         current_travel = hypot3d(@current_x, @current_y, @current_z, @last_x, @last_y, @last_z)
         distance = (2*((@last_speed_per_second+@speed_per_second)*(@speed_per_second-@last_speed_per_second)*0.5)/@acceleration).abs
         if distance <= current_travel && !(@last_speed_per_second+@speed_per_second).zero? && !@speed_per_second.zero?
-          move_duration = 2*distance/(@last_speed_per_second+@speed_per_second)
-          current_travel -= distance
-          move_duration += current_travel/@speed_per_second
+          move_duration = (2*distance/(@last_speed_per_second+@speed_per_second))+((current_travel-distance)/@speed_per_second)
         else
           move_duration = Math.sqrt(2*distance/@acceleration)
         end

@@ -75,6 +75,9 @@ module RintCore
       attr_reader :raw, :matches, :line, :command, :command_letter, :command_number,
                   :s_data, :p_data, :x, :y, :z, :e, :s, :p, :string_data, :comment
 
+      # GCode matching pattern
+      GCODE_PATTERN = /^(?<line>(?<command>((?<command_letter>[G|M|T])(?<command_number>\d{1,3}))) ?(?<regular_data>([S](?<s_data>\d*))? ?([P](?<p_data>\d*))? ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))?)? ?(?<string_data>[^;]*)?)? ?;?(?<comment>.*)?$/
+
       # Creates a {Line}
       # @param line [String] a line of GCode.
       # @return [false] if line is empty or doesn't match the evaluation expression.
@@ -82,8 +85,7 @@ module RintCore
       def initialize(line)
         return false if line.nil? || line.empty?
         @raw = line
-        @gcode_pattern = /^(?<line>(?<command>((?<command_letter>[G|M|T])(?<command_number>\d{1,3}))) ?(?<regular_data>([S](?<s_data>\d*))? ?([P](?<p_data>\d*))? ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))?)? ?(?<string_data>[^;]*)?)? ?;?(?<comment>.*)?$/
-        @matches = @raw.match(@gcode_pattern)
+        @matches = @raw.match(GCODE_PATTERN)
         return false if @matches.nil?
         assign_values
       end
