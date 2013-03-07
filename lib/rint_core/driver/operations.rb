@@ -238,7 +238,7 @@ private
       end
 
       def send_to_printer(line, line_number = nil, calc_checksum = false)
-        line = RintCore::GCode::Line.new(line) if line.is_a?(String) unless low_power?
+        line = RintCore::GCode::Line.new(line) if line.is_a?(String) && (!low_power? || line == RintCore::GCode::Codes::SET_LINE_NUM)
         return false if line.nil? || line.empty?
         if line.is_a?(RintCore::GCode::Line)
           if calc_checksum && line_number
