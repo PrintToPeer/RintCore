@@ -20,7 +20,7 @@ private
 
       def initialize_queueing
         @gcode_object = nil
-        @current_layer = nil
+        @current_layer = 0
         @priority_queue = []
         @queue_index = 0
         @line_number = 0
@@ -41,7 +41,7 @@ private
           unless paused?
             @queue_index = 0
             @line_number = 0
-            send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+            send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1)
           end
           return true
         end
@@ -52,30 +52,30 @@ private
           @resend_from = -1
           return nil
         elsif @resend_from < @line_number && @resend_from > -1
-          send_to_printer(@machine_history[@resend_from], @resend_from, false)
+          send_to_printer(@machine_history[@resend_from], @resend_from)
           @resend_from += 1
           return true
         end
       end
 
       def run_priority_queue
-        send_to_printer(@priority_queue.shift) unless @priority_queue.empty?
+        result = send_to_printer(@priority_queue.shift) unless @priority_queue.empty?
+        result
       end
 
       def run_main_queue
         return nil if paused?
-        if !config.low_power && @queue_index < @gcode_object.lines.length
-          apply_multipliers
-          @current_layer = @gcode_object.in_what_layer?(@queue_index)
-          send_to_printer(@gcode_object.lines[@queue_index], @line_number, true)
-        elsif config.low_power && @queue_index < @gcode_object.length
-          @current_layer ||= 0
-          send_to_printer(@gcode_object[@queue_index], @line_number, true)
+        if @queue_index < @gcode_object.length
+          unless config.low_power
+            apply_multipliers
+            @current_layer = @gcode_object.in_what_layer?(@queue_index)
+          end
+          send_to_printer(@gcode_object[@queue_index], @line_number)
+          @line_number += 1
+          @queue_index += 1
+          return true
         end
-        @line_number += 1
-        @queue_index += 1
-        return true
-    end
+      end
 
       def apply_multipliers
         @gcode_object.lines[@queue_index].speed_multiplier = config.speed_multiplier unless config.speed_multiplier.nil?

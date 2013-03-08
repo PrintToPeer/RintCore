@@ -81,8 +81,7 @@ module RintCore
         if online?
           if printing?
             if priority 
-              @priority_queue.push(command) if command.is_a?(String)
-              @priority_queue + command if command.is_a?(Array)
+              command.is_a?(String) ? @priority_queue.push(command) : @priority_queue + command
               return true
             else
               return false
@@ -116,22 +115,22 @@ module RintCore
         return false unless can_print?
         return false unless gcode.is_a?(RintCore::GCode::Object)
         printing!
-        @gcode_object = gcode
         @line_number = 0
         @queue_index = start_index
         @resend_from = -1
         wait_until_clear
         not_clear_to_send!
-        send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1, true)
+        send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1)
         return true unless gcode.present?
         if low_power?
-          new_gcode = []
-          @gcode_object.lines.each_with_index do |line,line_number|
-            new_gcode << line.to_s(line_number)
+          @gcode_object = []
+          gcode.lines.each_with_index do |line,line_number|
+            @gcode_object << format_command(line.to_s(line_number))
           end
-          @gcode_object = new_gcode
-          new_gcode = nil
+          gcode = nil
           GC.start
+        else
+          @gcode_object = gcode
         end
         @print_thread = Thread.new{print()}
         @start_time = Time.now
@@ -237,23 +236,18 @@ private
         end
       end
 
-      def send_to_printer(line, line_number = nil, calc_checksum = false)
-        line = RintCore::GCode::Line.new(line) if line.is_a?(String) && (!low_power? || line == RintCore::GCode::Codes::SET_LINE_NUM)
-        return false if line.nil? || line.empty?
-        if line.is_a?(RintCore::GCode::Line)
-          if calc_checksum && line_number
-            @machine_history[line_number] = line.to_s unless line.command == RintCore::GCode::Codes::SET_LINE_NUM
-            line = line.to_s(line_number)
-          else
-            line = line.to_s unless low_power?
-          end
-        end
-        line = format_command(line)
+      def send_to_printer(line, line_number = nil)
+        line = RintCore::GCode::Line.new(line) if line == RintCore::GCode::Codes::SET_LINE_NUM
+        return false if line.empty?
+        line = format_command(line.to_s(line_number)) if line.is_a?(RintCore::GCode::Line)
+        line = format_command(line) if line_number.nil?
         if connected?
-          config.callbacks[:send].call(line) if online? && !config.callbacks[:send].nil?
+          @machine_history[line_number] = line if printing? && !line_number.nil? && !line.include?(RintCore::GCode::Codes::SET_LINE_NUM)
+          config.callbacks[:send].call(line) unless config.callbacks[:send].nil?
           @connection.write(line)
           return true
         end
+        false
       end
 
       def wait_then_send(line)

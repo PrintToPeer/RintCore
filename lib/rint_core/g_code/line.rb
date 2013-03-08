@@ -44,11 +44,8 @@ module RintCore
       # @return [false] if line is empty or doesn't match the evaluation expression.
       # @return [Line]
       def initialize(line)
-        return false if line.nil? || line.empty?
-        @raw = line
+        (line.nil? || line.empty?) ? @raw = '' : @raw = line
         @matches = @raw.match(GCODE_PATTERN)
-        return false if @matches.nil?
-        # assign_values
         @f = @matches[:f_data].to_f unless @matches[:f_data].nil?
         @tool_number = command_number if !command_letter.nil? && command_letter == 'T'
       end

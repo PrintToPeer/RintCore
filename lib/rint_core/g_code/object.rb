@@ -103,6 +103,12 @@ module RintCore
         IO.readlines(file)
       end
 
+      # Get the given line of the object.
+      # @return [Line] the given line
+      def [](index)
+        @lines[index]
+      end
+
       # alias for {#empty?}.
       # @see #empty?
       def blank?
@@ -113,6 +119,12 @@ module RintCore
       # @return [Boolean] true if no lines, false otherwise.
       def empty?
         @lines.empty?
+      end
+
+      # Returns the number of lines in the object.
+      # @return [Fixnum] the number of lines in the object.
+      def length
+        @lines.length
       end
 
       # Opposite of {#empty?}.
