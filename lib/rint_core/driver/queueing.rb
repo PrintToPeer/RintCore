@@ -68,7 +68,9 @@ private
         if @queue_index < @gcode_object.length
           unless config.low_power
             apply_multipliers
+            current_layer = @current_layer
             @current_layer = @gcode_object.in_what_layer?(@queue_index)
+            config.callbacks[:layer_change] if !config.callbacks[:layer_change].nil? && @current_layer > current_layer
           end
           send_to_printer(@gcode_object[@queue_index], @line_number)
           @line_number += 1
