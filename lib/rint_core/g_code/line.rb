@@ -8,17 +8,17 @@ module RintCore
 
       # @!macro attr_accessor
       #   @!attribute [rw] $1
-      #     @param speed_multiplier [Float] number speed (F) will be multiplied by.
+      #     @param speed_multiplier [Numeric] number speed (F) will be multiplied by.
       #     @return [nil] if the speed multiplier is not set.
-      #     @return [Float] the speed multiplier (print moves only).
+      #     @return [Numeric] the speed multiplier (print moves only).
       #   @!attribute [rw] $2
-      #     @param extrusion_multiplier [Float] number extrusions (E) will be multiplied by.
+      #     @param extrusion_multiplier [Numeric] number extrusions (E) will be multiplied by.
       #     @return [nil] if the extrusion multiplier is not set.
-      #     @return [Float] the extrusion multiplier.
+      #     @return [Numeric] the extrusion multiplier.
       #   @!attribute [rw] $3
-      #     @param travel_multiplier [Float] number travel move speeds (F) will be multiplied by.
+      #     @param travel_multiplier [Numeric] number travel move speeds (F) will be multiplied by.
       #     @return [nil] if the travel multiplier is not set.
-      #     @return [Float] the travel multiplier.
+      #     @return [Numeric] the travel multiplier.
       #   @!attribute [rw] $4
       #     @param tool_number [Fixnum] the tool used in the command.
       #     @return [Fixnum] the tool used in the command.
@@ -83,8 +83,8 @@ module RintCore
       # Returns the line, modified if multipliers are set and a line number is given.
       # @return [String] the line.
       def to_s(line_number = nil)
-        return line if line_number.nil? || !line_number.is_a?(Fixnum)
-        return prefix_line(line, line_number) if @extrusion_multiplier.nil? && @speed_multiplier.nil?
+        return checksummed_line if line_number.nil? || !line_number.is_a?(Fixnum)
+        return prefixed_line(line_number) if @extrusion_multiplier.nil? && @speed_multiplier.nil?
 
         new_f = multiplied_speed
         new_e = multiplied_extrusion
@@ -196,7 +196,7 @@ module RintCore
       # @return [Fixnum] P value of the line.
       # @return [nil] if no P value is present
       def p
-        if @p.nil? && @matches[:p_data].nil?
+        if @p.nil? && !@matches[:p_data].nil?
           @p = @matches[:p_data].to_i
         else
           @p
@@ -219,7 +219,7 @@ module RintCore
       # @return [nil] if no comment is present
       def comment
         if @comment.nil? && !@matches[:comment].nil?
-          @comment ||= @matches[:comment].strip
+          @comment = @matches[:comment].strip
         else
           @comment
         end
@@ -246,16 +246,19 @@ private
       end
 
       def valid_multiplier?(multiplier)
-        !multiplier.nil? && (multiplier.class == Fixnum || multiplier.class == Float) && multiplier > 0
+        !multiplier.nil? && multiplier.is_a?(Numeric) && multiplier > 0
       end
 
-      def get_checksum(command)
-        command.bytes.inject{|a,b| a^b}.to_s
+      def get_checksum
+        line.bytes.inject{|a,b| a^b}.to_s
       end
 
-      def prefix_line(command, line_number)
-        prefix = 'N' + line_number.to_s + ' ' + command
-        (prefix+'*'+get_checksum(prefix))
+      def checksummed_line
+        line+'*'+get_checksum
+      end
+
+      def prefixed_line(line_number)
+        'N'+line_number.to_s+' '+checksummed_line
       end
 
     end
