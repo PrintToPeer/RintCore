@@ -23,6 +23,7 @@ private
         @current_layer = 0
         @priority_queue = []
         @queue_index = 0
+        @queue_length = 0
         @line_number = 0
         @resend_from = -1
         @machine_history = []
@@ -34,7 +35,8 @@ private
         not_clear_to_send!
         return true if resend_line
         return true if run_priority_queue
-        if run_main_queue
+        run_result = @file_handle.nil? ? run_main_queue : run_file_queue
+        if run_result
           return true
         else
           not_printing!
@@ -43,6 +45,7 @@ private
             @line_number = 0
             send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1)
           end
+          @file_handle.close unless @file_handle.nil?
           return true
         end
       end
@@ -58,14 +61,21 @@ private
         end
       end
 
+      def run_file_queue
+        line = @file_handle.get_line(@queue_index)
+        return false if line.nil?
+        line.split(";")[0].strip
+        return true if line.empty?
+        send_to_printer(line, @line_number)
+      end
+
       def run_priority_queue
-        result = send_to_printer(@priority_queue.shift) unless @priority_queue.empty?
-        result
+        send_to_printer(@priority_queue.shift) unless @priority_queue.empty?
       end
 
       def run_main_queue
         return nil if paused?
-        if @queue_index < @gcode_object.length
+        if @queue_index < @queue_length
           unless config.low_power
             apply_multipliers
             current_layer = @current_layer

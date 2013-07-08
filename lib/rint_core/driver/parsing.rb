@@ -21,7 +21,7 @@ private
           :valid
         when ( line.start_with?(*config.good_response) && line.include?(*config.temperature_response) )
           :temperature_response
-        when ( !line.start_with?(*config.good_response) && line.include?(*config.temperature_response) )
+        when line.include?(*config.temperature_response)
           :temperature
         when line.start_with?(*config.resend_response)
           :resend
@@ -30,8 +30,12 @@ private
         end
       end
 
-      def format_command(line)
-        (line + "\n").encode(config.encoding)
+      def format_command(line, line_number = false)
+        if !line_number
+          (line + "\n").encode(config.encoding)
+        elsif line_number.is_a?(Fixnum)
+          ("N#{line_number} " + line + "\n").encode(config.encoding)
+        end
       end
 
       def get_resend_number(line)

@@ -22,3 +22,12 @@ module RintCore
 
   end
 end
+
+# Modification to get a particular line from a file, used in low power or direct file printing mode.
+class File
+  def get_line(n)
+    (n+1).times{self.gets}
+    self.close
+    $_
+  end
+end

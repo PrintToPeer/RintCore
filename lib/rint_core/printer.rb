@@ -79,7 +79,7 @@ module RintCore
     #   @!attribute [r] $5
     #     @return [Fixnum] layer currently being printed.
     #     @return [nil] if not printing.
-    attr_reader :last_line_received, :gcode_object, :queue_index, :resend_from, :current_layer
+    attr_reader :last_line_received, :gcode_object, :queue_index, :resend_from, :current_layer, :clear
 
     # Creates a new {Printer} instance.
     # @param auto_connect [Boolean] if true, {#connect!} will be called.

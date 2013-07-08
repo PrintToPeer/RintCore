@@ -112,15 +112,8 @@ module RintCore
       # @return [false] if printer isn't ready to print or already printing.
       # @return [true] if print has been started.
       def print!(gcode, start_index = 0)
-        return false unless can_print?
         return false unless gcode.is_a?(RintCore::GCode::Object)
-        printing!
-        @line_number = 0
-        @queue_index = start_index
-        @resend_from = -1
-        wait_until_clear
-        not_clear_to_send!
-        send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1)
+        prep_to_print
         return true unless gcode.present?
         if low_power?
           @gcode_object = []
@@ -131,9 +124,10 @@ module RintCore
           GC.start
         else
           @gcode_object = gcode
+          @queue_length = gcode.length
         end
-        @print_thread = Thread.new{print()}
         @start_time = Time.now
+        @print_thread = Thread.new{print()}
         return true
       end
 
@@ -142,6 +136,13 @@ module RintCore
       # @see print!
       def print_file!(file)
         return false unless can_print?
+        return false unless File.exist?(file) || File.file?(file)
+        if config.low_power
+          @queue_length = %x{wc -l < "#{file}"}.to_i
+          @file_handle = File.open(file)
+          @start_time = Time.now
+          @print_thread = Thread.new{print()}
+        end
         gcode = RintCore::GCode::Object.new(file, 2400, auto_process = false)
         return false unless gcode
         print!(gcode)
@@ -154,6 +155,7 @@ private
         @listening_thread = nil
         @print_thread = nil
         @start_time = nil
+        @file_handle = nil
       end
 
       def readline!
@@ -162,6 +164,18 @@ private
         rescue EOFError, Errno::ENODEV => e
           config.callbacks[:critcal_error].call(e) unless config.callbacks[:critcal_error].nil?
         end
+      end
+
+      def prep_to_print
+        return false unless can_print?
+        return false if printing?
+        printing!
+        @line_number = 0
+        @queue_index = start_index
+        @resend_from = -1
+        wait_until_clear
+        not_clear_to_send!
+        send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1)
       end
 
       def print
@@ -184,7 +198,7 @@ private
         listen_until_online
         while listen_can_continue? do
           line = readline!
-          @last_line_received = line
+          @last_line_received = line unless line == "wait"
           case get_response_type(line)
           when :valid
             config.callbacks[:receive].call(line) unless config.callbacks[:receive].nil?
@@ -237,17 +251,22 @@ private
       end
 
       def send_to_printer(line, line_number = nil)
-        line = RintCore::GCode::Line.new(line) if line == RintCore::GCode::Codes::SET_LINE_NUM
+        line = RintCore::GCode::Line.new(line) if line.include?(RintCore::GCode::Codes::SET_LINE_NUM)
         return false if line.empty?
         line = format_command(line.to_s(line_number)) if line.is_a?(RintCore::GCode::Line)
-        line = format_command(line) if line_number.nil?
+        line = format_command(line, line_number) if line_number.nil? || !line.is_a?(RintCore::GCode::Line)
         if connected?
           @machine_history[line_number] = line if printing? && !line_number.nil? && !line.include?(RintCore::GCode::Codes::SET_LINE_NUM)
           config.callbacks[:send].call(line) unless config.callbacks[:send].nil?
           @connection.write(line)
+          trim_machine_history
           return true
         end
         false
+      end
+
+      def trim_machine_history
+        @machine_history[@line_number-1000] = nil if @line_number >= 1000 && @machine_history.length >= 1000
       end
 
       def wait_then_send(line)
