@@ -266,7 +266,7 @@ private
       end
 
       def trim_machine_history
-        @machine_history[@line_number-1000] = nil if @line_number >= 1000 && @machine_history.length >= 1000
+        @machine_history[@line_number-300] = nil if @line_number >= 300 && @machine_history.length >= 300
       end
 
       def wait_then_send(line)
