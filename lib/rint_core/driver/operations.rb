@@ -113,7 +113,7 @@ module RintCore
       # @return [true] if print has been started.
       def print!(gcode, start_index = 0)
         return false unless gcode.is_a?(RintCore::GCode::Object)
-        prep_to_print
+        prep_to_print(start_index)
         return true unless gcode.present?
         if low_power?
           @gcode_object = []
@@ -166,7 +166,7 @@ private
         end
       end
 
-      def prep_to_print
+      def prep_to_print(start_index)
         return false unless can_print?
         return false if printing?
         printing!
