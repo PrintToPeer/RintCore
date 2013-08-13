@@ -136,7 +136,7 @@ module RintCore
       # @see print!
       def print_file!(file)
         return false unless can_print?
-        return false unless File.exist?(file) || File.file?(file)
+        return false unless File.exist?(file) && File.file?(file)
         if config.low_power
           @queue_length = %x{wc -l < "#{file}"}.to_i
           @file_handle = File.open(file)
