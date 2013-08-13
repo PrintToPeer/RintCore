@@ -67,6 +67,7 @@ private
         line.split(";")[0].strip
         return true if line.empty?
         send_to_printer(line, @line_number)
+        callbacks[:current_line_number].call(@line_number) unless config.callbacks[:current_line_number].nil?
       end
 
       def run_priority_queue
