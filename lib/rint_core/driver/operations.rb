@@ -112,6 +112,7 @@ module RintCore
       # @return [false] if printer isn't ready to print or already printing.
       # @return [true] if print has been started.
       def print!(gcode, start_index = 0)
+        p "Starting print!"
         return false unless gcode.is_a?(RintCore::GCode::Object)
         prep_to_print(start_index)
         return false unless gcode.present?
@@ -122,6 +123,7 @@ module RintCore
           end
           gcode = nil
           GC.start
+          p "Low power ENABLEDZ"
         else
           @gcode_object = gcode
           @queue_length = gcode.length
@@ -135,8 +137,11 @@ module RintCore
       # @param file [String] file name of a GCode file on the system.
       # @see print!
       def print_file!(file)
+        p "Print file!"
         return false unless can_print?
+        p "Print file! 1"
         return false unless File.exist?(file) && File.file?(file)
+        p "Print file! 2"
         if config.low_power
           @queue_length = %x{wc -l < "#{file}"}.to_i
           @file_handle = File.open(file)
@@ -145,6 +150,7 @@ module RintCore
         end
         gcode = RintCore::GCode::Object.new(file, 2400, auto_process = false)
         return false unless gcode
+        p "GCode OK"
         print!(gcode)
       end
 
@@ -167,8 +173,11 @@ private
       end
 
       def prep_to_print(start_index)
+        p "Prrep 1"
         return false unless can_print?
+        p "Prep 2"
         return false if printing?
+        p "Prep 3"
         printing!
         @line_number = 0
         @queue_index = start_index
@@ -176,20 +185,26 @@ private
         wait_until_clear
         not_clear_to_send!
         send_to_printer(RintCore::GCode::Codes::SET_LINE_NUM, -1)
+        p "Done"
       end
 
       def print
+        p "privatge print"
         @machine_history = []
         config.callbacks[:start].call unless config.callbacks[:start].nil?
+        p "enter ing loop"
         while online? && printing? do
+          p "queueueue"
           advance_queue
           return true if paused?
         end
+        p "finished?"
         config.callbacks[:finish].call unless config.callbacks[:finish].nil?
         @start_time = nil
         initialize_queueing
         @print_thread.join
         @print_thread = nil
+        p "TRUE!zor"
         return true
       end
 
