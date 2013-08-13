@@ -266,17 +266,28 @@ private
       end
 
       def send_to_printer(line, line_number = nil)
+        p "Sent to PRINTER"
         line = RintCore::GCode::Line.new(line) if line.include?(RintCore::GCode::Codes::SET_LINE_NUM)
+        p "Sent to PRINTER 1.5"
         return false if line.empty?
+        p "Sent to PRINTER 2"
         line = format_command(line.to_s(line_number)) if line.is_a?(RintCore::GCode::Line)
+        p "Sent to PRINTER 2.5"
         line = format_command(line, line_number) if line_number.nil? || !line.is_a?(RintCore::GCode::Line)
+        p "Sent to PRINTER 333"
         if connected?
+          p "Sent to PRINTER CONNECTED 4"
           @machine_history[line_number] = line if printing? && !line_number.nil? && !line.include?(RintCore::GCode::Codes::SET_LINE_NUM)
+          p "Sent to PRINTER CONNECTED 5"
           config.callbacks[:send].call(line) unless config.callbacks[:send].nil?
+          p "Sent to PRINTER CONNECTED 6"
           @connection.write(line)
+          p "Sent to PRINTER CONNECTED 7"
           trim_machine_history
+          p "Sent to PRINTER CONNECTED 8"
           return true
         end
+        p "Sent to PRINTER CONNECTED 9"
         false
       end
 
