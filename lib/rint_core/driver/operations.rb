@@ -114,7 +114,7 @@ module RintCore
       def print!(gcode, start_index = 0)
         return false unless gcode.is_a?(RintCore::GCode::Object)
         prep_to_print(start_index)
-        return true unless gcode.present?
+        return false unless gcode.present?
         if low_power?
           @gcode_object = []
           gcode.lines.each_with_index do |line,line_number|
