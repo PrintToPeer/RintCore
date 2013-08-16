@@ -66,7 +66,7 @@ private
         if !paused? && @queue_index < @gcode_object.lines.length
           apply_multipliers
           @current_layer = @gcode_object.in_what_layer?(@queue_index)
-          config.callbacks[:current_line_numbers].call(@queue_index) unless config.callbacks[:current_line_numbers].nil?
+          config.callbacks[:current_line_number].call(@queue_index) unless config.callbacks[:current_line_number].nil?
           send_to_printer(@gcode_object.lines[@queue_index], @line_number, true)
           @line_number += 1
           @queue_index += 1
