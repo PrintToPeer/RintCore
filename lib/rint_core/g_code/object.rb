@@ -164,7 +164,12 @@ private
             @relative = false
           when REL_POSITIONING
             @relative = true
+          when ABS_EXT_MODE
+            @relative_extrusion = false
+          when REL_EXT_MODE
+            @relative_extrusion = true
           when SET_POSITION
+            @set_position_called = true
             set_positions(line)
           when HOME
             home_axes(line)
@@ -218,6 +223,7 @@ private
         measure_travel(line)
         set_last_values
         set_current_position(line)
+        calculate_filament_usage(line)
         set_limits(line)
       end
 
@@ -256,6 +262,7 @@ private
         @last_x = @current_x
         @last_y = @current_y
         @last_z = @current_z
+        @last_e = @current_e
         @last_speed_per_second = @speed_per_second
       end
 
@@ -263,11 +270,11 @@ private
         @current_x = to_mm(line.x) unless line.x.nil?
         @current_y = to_mm(line.y) unless line.y.nil?
         @current_z = to_mm(line.z) unless line.z.nil?
-        unless line.e.nil?
+        unless @relative_extrusion
           @filament_used[line.tool_number] = 0 if @filament_used[line.tool_number].nil?
           @filament_used[line.tool_number] += @current_e
-          @current_e = to_mm(line.e)
         end
+        @current_e = to_mm(line.e) unless line.e.nil?
       end
 
       def set_current_position(line)
@@ -275,13 +282,22 @@ private
           @current_x += to_mm(line.x) unless line.x.nil?
           @current_y += to_mm(line.y) unless line.y.nil?
           @current_z += to_mm(line.z) unless line.z.nil?
-          @current_e += to_mm(line.e) unless line.e.nil?
         else
           @current_x = to_mm(line.x) unless line.x.nil?
           @current_y = to_mm(line.y) unless to_mm(line.y).nil?
           @current_z = to_mm(line.z) unless line.z.nil?
+        end
+        if @relative_extrusion
+          @current_e += to_mm(line.e) unless line.e.nil?
+        else
           @current_e = to_mm(line.e) unless line.e.nil?
         end
+      end
+
+      def calculate_filament_usage(line)
+        return if @set_position_called
+        @filament_used[line.tool_number] = 0 if @filament_used[line.tool_number].nil?
+        @filament_used[line.tool_number] = @current_e
       end
 
       def set_limits(line)

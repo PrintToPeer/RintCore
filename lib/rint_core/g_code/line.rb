@@ -37,7 +37,7 @@ module RintCore
       attr_reader :raw, :matches
 
       # GCode matching pattern
-      GCODE_PATTERN = /^(?<line>(?<command>((?<command_letter>[G|M|T])(?<command_number>\d{1,3}))) ?(?<regular_data>([S](?<s_data>\d*))? ?([P](?<p_data>\d*))? ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E](?<e_data>[-]?\d+\.?\d*))?)? ?(?<string_data>[^;]*)?)? ?;?(?<comment>.*)?$/
+      GCODE_PATTERN = /^(?<line>(?<command>((?<command_letter>[G|M|T])(?<command_number>\d{1,3}))) ?(?<regular_data>([S](?<s_data>\d*))? ?([P](?<p_data>\d*))? ?([X](?<x_data>[-]?\d+\.?\d*))? ?([Y](?<y_data>[-]?\d+\.?\d*))? ?([Z](?<z_data>[-]?\d+\.?\d*))? ?([F](?<f_data>\d+\.?\d*))? ?([E|A](?<e_data>[-]?\d+\.?\d*))?)? ?(?<string_data>[^;]*)?)? ?;?(?<comment>.*)?$/
 
       # Creates a {Line}
       # @param line [String] a line of GCode.
