@@ -66,8 +66,8 @@ module RintCore
       # @return [Object] if data is valid, returns a GCode {Object}.
       # @return [false] if data is not an array, path, didn't contain GCode or default_speed wasn't a number grater than 0.
       def initialize(data = nil, default_speed = 2400, auto_process = true, acceleration = 1500)
-        return false if positive_number?(default_speed)
-        return false if positive_number?(acceleration)
+        return false unless positive_number?(default_speed)
+        return false unless positive_number?(acceleration)
         if data.class == String && self.class.is_file?(data)
           data = self.class.get_file(data)
         end
@@ -216,7 +216,7 @@ private
       end
 
       def hypot3d(x1, y1, z1, x2 = 0.0, y2 = 0.0, z2 = 0.0)
-        return Math.hypot(x2-x1, Math.hypot(y2-y1, z2-z1))
+        Math.hypot(x2-x1, Math.hypot(y2-y1, z2-z1))
       end
 
       def movement_line(line)
@@ -255,7 +255,7 @@ private
       end
 
       def positive_number?(number, grater_than = 0)
-        number.nil? && (number.is_a?(Fixnum) || number.is_a?(Float)) && number >= grater_than
+        number.is_a?(Numeric) && number >= grater_than
       end
 
       def set_last_values
