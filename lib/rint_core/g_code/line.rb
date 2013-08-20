@@ -26,7 +26,8 @@ module RintCore
       #     @param f [Float] speed of the command (in mm/minute).
       #     @return [Float] the speed of the command (in mm/minute).
       attr_accessor :speed_multiplier, :extrusion_multiplier,
-                    :travel_multiplier, :tool_number, :f
+                    :travel_multiplier, :tool_number, :f, :x_add,
+                    :y_add, :z_add
 
       # @!macro attr_reader
       #   @!attribute [r] $1
@@ -86,20 +87,21 @@ module RintCore
       # Returns the line, modified if multipliers are set and a line number is given.
       # @return [String] the line.
       def to_s(line_number = nil)
-        return line if line_number.nil? || !line_number.is_a?(Fixnum)
-        return prefix_line(line, line_number) if @extrusion_multiplier.nil? && @speed_multiplier.nil?
+        # return line if line_number.nil? || !line_number.is_a?(Fixnum)
+        # return prefix_line(line, line_number) if @extrusion_multiplier.nil? && @speed_multiplier.nil?
 
         new_f = multiplied_speed
         new_e = multiplied_extrusion
 
-        x_string = !x.nil? ? " X#{x}" : ''
-        y_string = !y.nil? ? " Y#{y}" : ''
-        z_string = !z.nil? ? " Z#{z}" : ''
+        x_string = !x.nil? ? " X#{x+@x_add.to_f}" : ''
+        y_string = !y.nil? ? " Y#{y+@y_add.to_f}" : ''
+        z_string = !z.nil? ? " Z#{z+@z_add.to_f}" : ''
         e_string = !e.nil? ? " E#{new_e}" : ''
         f_string = !f.nil? ? " F#{new_f}" : ''
+        p_string = !p.nil? ? " P#{p}" : ""
         string = !string_data.nil? ? " #{string_data}" : ''
 
-        prefix_line("#{command}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}#{string}", line_number)
+        prefix_line("#{command}#{p_string}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}#{string}", line_number)
       end
 
 ## Line value functions
@@ -199,7 +201,7 @@ module RintCore
       # @return [Fixnum] P value of the line.
       # @return [nil] if no P value is present
       def p
-        if @p.nil? && @matches[:p_data].nil?
+        if @p.nil? && !@matches[:p_data].nil?
           @p = @matches[:p_data].to_i
         else
           @p
@@ -257,6 +259,7 @@ private
       end
 
       def prefix_line(command, line_number)
+        return command if line_number.nil?
         prefix = 'N' + line_number.to_s + ' ' + command
         (prefix+'*'+get_checksum(prefix))
       end

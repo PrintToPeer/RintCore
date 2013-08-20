@@ -65,14 +65,22 @@ module RintCore
       # @param acceleration [Float] the acceleration rate set in the printer' firmware.
       # @return [Object] if data is valid, returns a GCode {Object}.
       # @return [false] if data is not an array, path, didn't contain GCode or default_speed wasn't a number grater than 0.
-      def initialize(data = nil, default_speed = 2400, auto_process = true, acceleration = 1500)
-        return false unless positive_number?(default_speed)
-        return false unless positive_number?(acceleration)
-        if data.class == String && self.class.is_file?(data)
-          data = self.class.get_file(data)
+      def initialize(options = {})
+        if options.is_a?(Array)
+          temp_data = options
+          options = {}
+          options[:data] = temp_data
+          temp_data = nil
         end
-        return false if data.nil? || data.class != Array
-        set_variables(data, default_speed, acceleration)
+        options = default_options.merge!(options)
+        return false unless positive_number?(options[:default_speed])
+        return false unless positive_number?(options[:acceleration])
+        if options[:data].class == String && self.class.is_file?(options[:data])
+          options[:data] = self.class.get_file(options[:data])
+        end
+        return false if options[:data].nil? || options[:data].class != Array
+        @options = options
+        set_variables
         @raw_data.each do |line|
           line = set_line_properties(RintCore::GCode::Line.new(line))
           if line
@@ -83,7 +91,7 @@ module RintCore
             end
           end
         end
-        process if auto_process
+        process if options[:auto_process]
         return false if empty?
       end
 
@@ -149,7 +157,22 @@ module RintCore
         nil
       end
 
+      def write_to_file(output_file, encoding = "us-ascii")
+        begin
+          fd = File.open(output_file, 'w+')
+          @lines.each do |line|
+            fd.write (line.to_s+"; #{line.comment.to_s}"+"\n").encode(encoding)
+          end
+        ensure
+          fd.close
+        end
+      end
+
 private
+
+      def default_options
+        {default_speed: 2400, auto_process: true, acceleration: 1500, add_speed: false}
+      end
 
       def process
         set_processing_variables
@@ -323,7 +346,10 @@ private
         @tool_number = line.tool_number unless line.tool_number.nil?
         line.tool_number = @tool_number if line.tool_number.nil?
         @speed = line.f unless line.f.nil?
-        line.f = @speed if line.f.nil?
+        line.f = @speed if line.f.nil? && @options[:add_speed]
+        line.x_add = @options[:x_add]
+        line.y_add = @options[:y_add]
+        line.z_add = @options[:z_add]
         line
       end
 
@@ -359,13 +385,13 @@ private
         @acceleration = 1500.0 #mm/s/s  ASSUMING THE DEFAULT FROM SPRINTER !!!!
       end
 
-      def set_variables(data, default_speed, acceleration)
-        @raw_data = data
+      def set_variables
+        @raw_data = @options[:data]
         @imperial = false
         @relative = false
         @tool_number = 0
-        @speed = default_speed.to_f
-        @acceleration = acceleration
+        @speed = @options[:default_speed].to_f
+        @acceleration = @options[:acceleration]
         @lines = []
         @comments = []
       end

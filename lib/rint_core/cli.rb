@@ -6,19 +6,19 @@ require 'thor'
 module RintCore
   # Provides command line interfaces for interacting with RintCore's classes.
   class Cli < Thor
-    map '-a' => :analyze, '-p' => :print
+    map '-a' => :analyze, '-p' => :print, '-m' => :modify
 
     desc 'analyze FILE', 'Get statistics about the given GCode file.'
     method_option :decimals, default: 2, aliases: '-d', type: :numeric, desc: 'The number of decimal places given for measurements.'
     # Analyze the given file, also sets the @object instance variable to a {RintCore::GCode::Object}.
     # @param file [String] path to a GCode file on the system.
     # @return [String] statistics about the given GCode file.
-    def analyze(file)
+    def analyze(file, gcode_options = {})
       unless RintCore::GCode::Object.is_file?(file)
         puts "Non-exsitant file: #{file}"
         exit
       end
-      @object = RintCore::GCode::Object.new(RintCore::GCode::Object.get_file(file))
+      @object = RintCore::GCode::Object.new({data: RintCore::GCode::Object.get_file(file)}.merge!(gcode_options))
 
       unless @object.present?
         puts "Non-GCode or empty file: #{file}"
@@ -99,6 +99,20 @@ module RintCore
         end
       end
       printer.disconnect!
+    end
+
+    desc 'modify FILE', 'add a given amount to everyline with a given acxis'
+    method_option :x, aliases: '-x', type: :numeric, desc: 'The amount to add to all X coordinates.'
+    method_option :y, aliases: '-y', type: :numeric, desc: 'The amount to add to all Y coordinates.'
+    method_option :z, aliases: '-z', type: :numeric, desc: 'The amount to add to all Z coordinates.'
+    # Analyze the given file, also sets the @object instance variable to a {RintCore::GCode::Object}.
+    # @param file [String] path to a GCode file on the system.
+    # @return [String] statistics about the given GCode file.
+    def modify(file)
+      analyze(file, {x_add: options[:x], y_add: options[:y], z_add: options[:z]})
+      puts "Writing changes to file"
+      @object.write_to_file(file)
+      puts "Wrote new Gcode to file!"
     end
 
   end
