@@ -218,7 +218,7 @@ private
       end
 
       def calculate_time(line)
-        @speed_per_second = line.f / 60
+        line.f.nil? ? @speed_per_second = @last_speed_per_second : @speed_per_second = line.f / 60
         current_travel = hypot3d(@current_x, @current_y, @current_z, @last_x, @last_y, @last_z)
         distance = (2*((@last_speed_per_second+@speed_per_second)*(@speed_per_second-@last_speed_per_second)*0.5)/@acceleration).abs
         if distance <= current_travel && !(@last_speed_per_second+@speed_per_second).zero? && !@speed_per_second.zero?
