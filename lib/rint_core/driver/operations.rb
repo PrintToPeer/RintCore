@@ -134,7 +134,7 @@ module RintCore
       # @see print!
       def print_file!(file)
         return false unless can_print?
-        gcode = RintCore::GCode::Object.new(file, 2400, auto_process = false)
+        gcode = RintCore::GCode::Object.new({data: file, acceleration: 2400, auto_process: false})
         return false unless gcode
         print!(gcode)
       end
