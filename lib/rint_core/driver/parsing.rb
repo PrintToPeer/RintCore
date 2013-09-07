@@ -6,7 +6,7 @@ module RintCore
     module Parsing
 
 private
-
+      
       def get_response_type(line)
         case
         when ( line.nil? || !line.is_a?(String) )
@@ -21,7 +21,7 @@ private
           :valid
         when ( line.start_with?(*config.good_response) && line.include?(*config.temperature_response) )
           :temperature_response
-        when line.include?(*config.temperature_response)
+        when ( !line.start_with?(*config.good_response) && line.include?(*config.temperature_response) )
           :temperature
         when line.start_with?(*config.resend_response)
           :resend
