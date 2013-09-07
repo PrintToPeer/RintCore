@@ -99,9 +99,10 @@ module RintCore
         e_string = !e.nil? ? " E#{new_e}" : ''
         f_string = !f.nil? ? " F#{new_f}" : ''
         p_string = !p.nil? ? " P#{p}" : ""
+        s_string = !s.nil? ? " S#{s}" : ""
         string = !string_data.nil? ? " #{string_data}" : ''
 
-        prefix_line("#{command}#{p_string}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}#{string}", line_number)
+        prefix_line("#{command}#{s_string}#{p_string}#{x_string}#{y_string}#{z_string}#{f_string}#{e_string}#{string}".strip, line_number)
       end
 
 ## Line value functions

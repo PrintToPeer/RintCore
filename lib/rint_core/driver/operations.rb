@@ -177,9 +177,9 @@ private
         while listen_can_continue? do
           line = readline!
           @last_line_received = line
+          config.callbacks[:receive].call(line) unless config.callbacks[:receive].nil?
           case get_response_type(line)
           when :valid
-            config.callbacks[:receive].call(line) unless config.callbacks[:receive].nil?
             clear_to_send!
           when :temperature
             config.callbacks[:temperature].call(line) unless config.callbacks[:temperature].nil?
@@ -204,7 +204,7 @@ private
       def listen_until_online
         begin
           empty_lines = 0
-          accepted_reponses = [:online,:temperature,:valid]
+          accepted_reponses = [:online,:temperature,:temperature_response,:valid]
           while listen_can_continue? do
             line = readline!
             unless line.empty?
