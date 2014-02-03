@@ -16,9 +16,9 @@ Gem::Specification.new do |gem|
   gem.executables                = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.require_paths              = ["lib"]
   gem.required_ruby_version      = '>= 1.9.1'
-  gem.add_runtime_dependency     'serialport', '1.1.0'
   gem.add_runtime_dependency     'activesupport'
   gem.add_runtime_dependency     'thor'
+  gem.add_development_dependency 'serialport', '1.3.0'
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'yard'
 end
