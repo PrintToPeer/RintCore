@@ -30,7 +30,7 @@ See CONTRIBUTING.md
 
 ### License & Copyright
 
-Copyright (C) 2013  Kaz Walker
+Copyright (C) 2014 PrintToPeer Inc.
 
 The Driver modules are based on Printrun's [printcore.py](https://github.com/kliment/Printrun/blob/master/printcore.py).  
 The GCode analyzer is an optimized version of Printrun's

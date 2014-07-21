@@ -197,6 +197,7 @@ private
           when HOME
             home_axes(line)
           when RAPID_MOVE
+            count_layers(line)
             movement_line(line)
           when CONTROLLED_MOVE
             count_layers(line)
