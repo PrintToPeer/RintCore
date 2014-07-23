@@ -294,10 +294,6 @@ private
         @current_x = to_mm(line.x) unless line.x.nil?
         @current_y = to_mm(line.y) unless line.y.nil?
         @current_z = to_mm(line.z) unless line.z.nil?
-        unless @relative_extrusion
-          @filament_used[line.tool_number] = 0 if @filament_used[line.tool_number].nil?
-          @filament_used[line.tool_number] += @current_e
-        end
         @current_e = to_mm(line.e) unless line.e.nil?
       end
 
@@ -319,9 +315,10 @@ private
       end
 
       def calculate_filament_usage(line)
-        return if @set_position_called
+        return if (@current_e - @last_e) < 0
+
         @filament_used[line.tool_number] = 0 if @filament_used[line.tool_number].nil?
-        @filament_used[line.tool_number] = @current_e
+        @filament_used[line.tool_number] += (@current_e - @last_e)
       end
 
       def set_limits(line)
